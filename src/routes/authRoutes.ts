@@ -4,6 +4,7 @@ import {
     registerUser,
     verificarAutenticacao,
     criarPerfil,
+    confirmarEmail,
 } from "../controllers/userController";
 import { verificarToken } from "../middlewares/authMiddleware";
 import multer from "multer";
@@ -32,6 +33,7 @@ const upload = multer({ storage });
 router.post("/login", loginUser);
 router.post("/register", registerUser);
 router.get("/verify", verificarToken, verificarAutenticacao);
+router.get("/confirmar", confirmarEmail);
 
 // --- Rotas de Perfil (Autenticação) ---
 router.post("/criarPerfil", verificarToken, upload.single('fotoPerfil'), criarPerfil);

@@ -4,6 +4,7 @@ import ResetToken from "../models/resetToken";
 import bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 import crypto from "crypto";
+import { sendVerificationEmail, sendPasswordResetEmail } from "../services/emailVerificationService";
 
 // Interface local para requisições autenticadas
 interface AuthRequest extends Request {
@@ -32,6 +33,12 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
             console.error("Erro fatal: JWT_SECRET não está definido.");
             throw new Error("A configuração do servidor está incompleta.");
         }
+
+        if (usuario && !usuario.isVerified) {
+        return res.status(403).json({ 
+            message: "Sua conta ainda não foi ativada. Verifique seu e-mail!" 
+        });
+    }
 
         const payload = { id: usuario._id, email: usuario.email, tipoUsuario: usuario.tipoUsuario };
         const token = jwt.sign(payload, secret, { expiresIn: '7d' });
@@ -88,16 +95,28 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
 
         const hashedSenha = await bcrypt.hash(senha, 10);
 
+        const verificationToken = crypto.randomBytes(32).toString("hex");
+        const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
         const usuario = new User({
             ...req.body,
             email, // Sobrescreve com email em lowercase
             senha: hashedSenha,
             aceiteTermos: true,
             dataAceiteTermos: new Date(),
+            isVerified: false,
+            verificationToken,
+            tokenExpires,
         });
         await usuario.save();
 
-        return res.status(201).json({ message: "Usuário cadastrado com sucesso!" });
+        try {
+            await sendVerificationEmail(usuario.email, usuario.nome, verificationToken);
+        } catch (error) {
+            console.error("Erro ao enviar e-mail de verificação:", error);
+        }
+
+        return res.status(201).json({ message: "Usuário cadastrado com sucesso! Verifique seu e-mail para ativar a conta." });
     } catch (error) {
         const err = error as Error;
         console.error("Erro ao cadastrar usuário:", err);
@@ -224,11 +243,11 @@ export const solicitarRecuperacaoSenha = async (req: Request, res: Response): Pr
             const token = crypto.randomBytes(32).toString("hex");
             await ResetToken.create({ email, token });
 
-            const resetLink = `${process.env.FRONTEND_URL || "http://localhost:3000"}/recuperar-senha?token=${token}`;
-            console.log(`
-🔗 Link de recuperação para ${email}: ${resetLink}
-`);
-            // Em um ambiente real, aqui seria enviado um email.
+            try {
+                await sendPasswordResetEmail(email, token);
+            } catch (err) {
+                console.error("Erro ao enviar e-mail de recuperação de senha:", err);
+            }
         }
 
         return res.status(200).json({ message: "Se o email estiver cadastrado, um link de recuperação será enviado." });
@@ -335,4 +354,44 @@ export const obterTermos = (req: Request, res: Response): Response => {
       termosUso: { titulo: "Termos de Uso", versao: "1.0", conteudo: "..." },
       politicaPrivacidade: { titulo: "Política de Privacidade", versao: "1.0", conteudo: "..." },
     });
+};
+
+// Confirmar email - nova função para lidar com a confirmação via token
+export const confirmarEmail = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { token } = req.query;
+
+        if (!token) {
+            res.status(400).json({ message: "Token de verificação ausente." });
+            return;
+        }
+
+        // 1. Buscar usuário pelo token e verificar se o token não expirou
+        const usuario = await User.findOne({
+            verificationToken: token,
+            tokenExpires: { $gt: new Date() } // Verifica se a data de expiração é maior que 'agora'
+        });
+
+        if (!usuario) {
+            // Se não achar, redireciona para uma página de erro no React ou envia erro
+            res.status(400).json({ message: "Link inválido ou expirado." });
+            return;
+        }
+
+        // 2. Atualizar o status do usuário
+        usuario.isVerified = true;
+        usuario.verificationToken = undefined; // Remove o token para não ser reutilizado
+        usuario.tokenExpires = undefined;
+        
+        await usuario.save();
+
+        // 3. Redirecionar para o Front-end
+        // O navegador sairá da rota da API e abrirá seu site React na página de login
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        res.redirect(`${frontendUrl}/login?email_verificado=true`);
+
+    } catch (error) {
+        console.error("Erro ao confirmar e-mail:", error);
+        res.status(500).json({ message: "Erro interno ao processar verificação." });
+    }
 };

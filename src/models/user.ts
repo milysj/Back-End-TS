@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 
 export interface IUser extends Document {
-  _id: string;
+  _id: mongoose.Types.ObjectId;
   nome: string;
   email: string;
   senha: string;
@@ -21,6 +21,9 @@ export interface IUser extends Document {
   dataAceiteTermos: Date | null;
   tema: "light" | "dark";
   idioma: "pt-BR" | "en-US" | "es-ES";
+  isVerified: boolean;
+  verificationToken?: string;
+  tokenExpires?: Date;
 }
 
 
@@ -76,8 +79,20 @@ const UserSchema: Schema = new mongoose.Schema(
       enum: ["pt-BR", "en-US", "es-ES"],
       default: "pt-BR",
     },
+  
+    isVerified: { 
+      type: Boolean, default: false 
+    },
+    verificationToken: {
+       type: String 
+    },
+    tokenExpires: { 
+      type: Date 
+    }
+
   },
   { timestamps: true }
+  
 );
 
 UserSchema.index(

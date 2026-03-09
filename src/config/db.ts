@@ -1,4 +1,12 @@
 import mongoose from "mongoose";
+// Source - https://stackoverflow.com/a/79892633
+// Posted by Xoosk
+// Retrieved 2026-03-07, License - CC BY-SA 4.0
+
+import { setServers } from "node:dns/promises";
+setServers(["1.1.1.1", "8.8.8.8"]);
+
+
 
 export const connectDB = async (): Promise<void> => {
   try {
