@@ -14,6 +14,15 @@ export const sendVerificationEmail = async (
   nomeUsuario: string,
   token: string
 ): Promise<void> => {
+  const destinatario = (to || "").toString().trim();
+  if (!destinatario) {
+    throw new Error("Destinatário de e-mail de verificação (to) não fornecido.");
+  }
+
+  if (!token || !token.toString().trim()) {
+    throw new Error("Token de verificação não fornecido.");
+  }
+
   if (!hasMailConfig()) {
     console.warn("Config de e-mail incompleta (MAIL_*). E-mail de verificação não será enviado.");
     return;
@@ -26,7 +35,7 @@ export const sendVerificationEmail = async (
 
   await transporter.sendMail({
     from: `Suporte <${from}>`,
-    to,
+    to: destinatario,
     subject: "Confirme seu e-mail - EstudeMy",
     html: `
       <h1>Olá, ${nomeUsuario}!</h1>
@@ -47,6 +56,14 @@ export const sendPasswordResetEmail = async (
   to: string,
   token: string
 ): Promise<void> => {
+  if (!to || !to.trim()) {
+    throw new Error("Destinatário de e-mail de recuperação não fornecido.");
+  }
+
+  if (!token || !token.toString().trim()) {
+    throw new Error("Token de recuperação de senha não fornecido.");
+  }
+
   if (!hasMailConfig()) {
     console.warn("Config de e-mail incompleta (MAIL_*). E-mail de recuperação não será enviado.");
     return;
@@ -76,4 +93,5 @@ export const sendPasswordResetEmail = async (
       <p>Se você não solicitou essa alteração, ignore este e-mail.</p>
     `,
   });
+  console.warn(resetLink);
 };
