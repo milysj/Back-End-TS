@@ -1,7 +1,4 @@
 import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 // Carrega as variáveis de ambiente para configuração do e-mail.
 // É CRÍTICO que estas variáveis estejam configuradas no ambiente de produção (ex: Render, Vercel).

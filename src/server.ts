@@ -1,5 +1,8 @@
-import express from 'express';
 import dotenv from 'dotenv';
+// Carrega variáveis de ambiente do arquivo .env. DEVE SER A PRIMEIRA LINHA.
+dotenv.config();
+
+import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
@@ -16,9 +19,6 @@ import progressoRoutes from './routes/progressoRoutes';
 import rankingRoutes from './routes/rankingRoutes';
 import secoesRoutes from './routes/secoesRoutes';
 import trilhaRoutes from './routes/trilhaRoutes';
-
-// Carrega variáveis de ambiente do arquivo .env
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
