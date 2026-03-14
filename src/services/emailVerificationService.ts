@@ -30,7 +30,7 @@ export const sendVerificationEmail = async (
 
   // Alinhado com o fluxo de recuperação de senha, o link agora aponta para o frontend.
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-  const verificationLink = `${frontendUrl}/confirmar-email?token=${token}`;
+  const verificationLink = `${frontendUrl}/confirmar?token=${token}`;
 
   try {
     await resend.emails.send({
