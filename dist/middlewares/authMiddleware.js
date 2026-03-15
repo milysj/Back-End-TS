@@ -119,3 +119,4 @@ const verificarTokenOpcional = async (req, res, next) => {
     next();
 };
 exports.verificarTokenOpcional = verificarTokenOpcional;
+//# sourceMappingURL=authMiddleware.js.map

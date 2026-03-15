@@ -166,3 +166,4 @@ const obterDadosUsuario = async (req, res) => {
     }
 };
 exports.obterDadosUsuario = obterDadosUsuario;
+//# sourceMappingURL=progressoController.js.map

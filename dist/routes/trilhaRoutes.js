@@ -22,3 +22,4 @@ router.get("/buscar", authMiddleware_1.verificarTokenOpcional, trilhaController_
 router.post("/visualizar/:id", authMiddleware_1.verificarTokenOpcional, trilhaController_1.visualizarTrilha);
 router.get("/:id", authMiddleware_1.verificarTokenOpcional, trilhaController_1.buscarTrilhaPorId);
 exports.default = router;
+//# sourceMappingURL=trilhaRoutes.js.map

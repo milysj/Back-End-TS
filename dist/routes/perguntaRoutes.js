@@ -14,3 +14,4 @@ router.post("/", perguntaController_1.criarPergunta);
 router.put("/:faseId/:perguntaIndex", perguntaController_1.atualizarPergunta);
 router.delete("/:faseId/:perguntaIndex", perguntaController_1.deletarPergunta);
 exports.default = router;
+//# sourceMappingURL=perguntaRoutes.js.map

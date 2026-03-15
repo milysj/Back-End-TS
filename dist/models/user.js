@@ -72,3 +72,4 @@ UserSchema.index({ username: 1 }, {
 });
 // Exporta o modelo, garantindo que ele não seja recriado se já existir.
 exports.default = mongoose_1.default.models.User || mongoose_1.default.model('User', UserSchema);
+//# sourceMappingURL=user.js.map

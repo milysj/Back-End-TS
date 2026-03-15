@@ -27,3 +27,4 @@ const faseSchema = new mongoose_1.default.Schema({
     perguntas: [perguntaSchema],
 }, { timestamps: true });
 exports.default = mongoose_1.default.model("Fase", faseSchema);
+//# sourceMappingURL=fase.js.map

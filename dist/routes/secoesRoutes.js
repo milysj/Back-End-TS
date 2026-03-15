@@ -15,3 +15,4 @@ router.post("/", authMiddleware_1.verificarToken, authMiddleware_1.verificarProf
 router.put("/:id", authMiddleware_1.verificarToken, authMiddleware_1.verificarProfessor, secaoController_1.atualizarSecao);
 router.delete("/:id", authMiddleware_1.verificarToken, authMiddleware_1.verificarProfessor, secaoController_1.deletarSecao);
 exports.default = router;
+//# sourceMappingURL=secoesRoutes.js.map

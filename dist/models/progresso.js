@@ -57,3 +57,4 @@ const progressoSchema = new mongoose_1.default.Schema({
 // Índice único para evitar duplicatas (um usuário só pode completar uma fase uma vez)
 progressoSchema.index({ userId: 1, faseId: 1 }, { unique: true });
 exports.default = mongoose_1.default.model("Progresso", progressoSchema);
+//# sourceMappingURL=progresso.js.map

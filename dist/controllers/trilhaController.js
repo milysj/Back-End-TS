@@ -216,3 +216,4 @@ const visualizarTrilha = async (req, res) => {
     }
 };
 exports.visualizarTrilha = visualizarTrilha;
+//# sourceMappingURL=trilhaController.js.map

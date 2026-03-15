@@ -28,3 +28,4 @@ const trilhaSchema = new mongoose_1.default.Schema({
 }, { timestamps: true });
 const Trilha = mongoose_1.default.model("Trilha", trilhaSchema);
 exports.default = Trilha;
+//# sourceMappingURL=trilha.js.map

@@ -165,3 +165,4 @@ const deletarSecao = async (req, res) => {
     }
 };
 exports.deletarSecao = deletarSecao;
+//# sourceMappingURL=secaoController.js.map

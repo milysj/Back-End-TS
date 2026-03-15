@@ -9,3 +9,4 @@ const homeController_1 = require("../controllers/homeController");
 const router = express_1.default.Router();
 router.get("/", authMiddleware_1.verificarToken, homeController_1.getHomeData);
 exports.default = router;
+//# sourceMappingURL=homeRoutes.js.map

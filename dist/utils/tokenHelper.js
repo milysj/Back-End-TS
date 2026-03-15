@@ -50,3 +50,4 @@ const gerarToken = (payload) => {
     return jwt.sign(payload, secret, { expiresIn: "7d" });
 };
 exports.gerarToken = gerarToken;
+//# sourceMappingURL=tokenHelper.js.map

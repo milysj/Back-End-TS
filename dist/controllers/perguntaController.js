@@ -124,3 +124,4 @@ const deletarPergunta = async (req, res) => {
     }
 };
 exports.deletarPergunta = deletarPergunta;
+//# sourceMappingURL=perguntaController.js.map

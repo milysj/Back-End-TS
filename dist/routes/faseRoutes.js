@@ -19,3 +19,4 @@ router.post("/", authMiddleware_1.verificarToken, authMiddleware_1.verificarProf
 router.put("/:id", authMiddleware_1.verificarToken, authMiddleware_1.verificarProfessor, faseController_1.atualizarFase);
 router.delete("/:id", authMiddleware_1.verificarToken, authMiddleware_1.verificarProfessor, faseController_1.deletarFase);
 exports.default = router;
+//# sourceMappingURL=faseRoutes.js.map

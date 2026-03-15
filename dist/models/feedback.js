@@ -31,3 +31,4 @@ const feedbackSchema = new mongoose_1.default.Schema({
     },
 }, { timestamps: true });
 exports.default = mongoose_1.default.models.Feedback || mongoose_1.default.model("Feedback", feedbackSchema);
+//# sourceMappingURL=feedback.js.map

@@ -14,3 +14,4 @@ router.delete("/:trilhaId", licaoSalvaController_1.removerTrilhaSalva);
 router.get("/", licaoSalvaController_1.listarTrilhasSalvas);
 router.get("/verificar/:trilhaId", licaoSalvaController_1.verificarSeSalva);
 exports.default = router;
+//# sourceMappingURL=licaoSalvaRoutes.js.map

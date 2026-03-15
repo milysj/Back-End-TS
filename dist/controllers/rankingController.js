@@ -77,3 +77,4 @@ const obterRankingNivel = async (req, res) => {
     }
 };
 exports.obterRankingNivel = obterRankingNivel;
+//# sourceMappingURL=rankingController.js.map

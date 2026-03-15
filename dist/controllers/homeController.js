@@ -21,3 +21,4 @@ const getHomeData = async (req, res) => {
     }
 };
 exports.getHomeData = getHomeData;
+//# sourceMappingURL=homeController.js.map

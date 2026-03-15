@@ -3,8 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
 const dotenv_1 = __importDefault(require("dotenv"));
+// Carrega variáveis de ambiente do arquivo .env. DEVE SER A PRIMEIRA LINHA.
+dotenv_1.default.config();
+const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const db_1 = require("./config/db");
@@ -20,8 +22,6 @@ const progressoRoutes_1 = __importDefault(require("./routes/progressoRoutes"));
 const rankingRoutes_1 = __importDefault(require("./routes/rankingRoutes"));
 const secoesRoutes_1 = __importDefault(require("./routes/secoesRoutes"));
 const trilhaRoutes_1 = __importDefault(require("./routes/trilhaRoutes"));
-// Carrega variáveis de ambiente do arquivo .env
-dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // --- Middlewares ---
@@ -54,3 +54,4 @@ if (process.env.NODE_ENV !== 'test') {
     });
 }
 exports.default = app;
+//# sourceMappingURL=server.js.map

@@ -12,3 +12,4 @@ router.use(authMiddleware_1.verificarToken);
 router.get("/", rankingController_1.obterRanking);
 router.get("/nivel", rankingController_1.obterRankingNivel);
 exports.default = router;
+//# sourceMappingURL=rankingRoutes.js.map

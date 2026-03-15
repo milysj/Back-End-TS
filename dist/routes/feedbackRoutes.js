@@ -12,3 +12,4 @@ router.post("/", authMiddleware_1.verificarTokenOpcional, feedbackController_1.c
 // Apenas usuários autenticados (e administradores, conforme lógica do controller) podem listar
 router.get("/", authMiddleware_1.verificarToken, feedbackController_1.listarFeedbacks);
 exports.default = router;
+//# sourceMappingURL=feedbackRoutes.js.map

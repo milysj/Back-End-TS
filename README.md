@@ -18,7 +18,11 @@ Professores podem disponibilizar seus cursos, aulas e conteúdos personalizados,
   - [⚙️ Tecnologias Utilizadas](#️-tecnologias-utilizadas)
     - [Backend](#backend)
     - [DevOps](#devops)
-  - [🚀 Como Executar Localmente](#-como-executar-localmente)
+  - [📌 Alterações recentes](#-alterações-recentes)
+  - [Verificação de e-mail e recuperação de senha](#verificação-de-e-mail-e-recuperação-de-senha)
+  - [TypeScript, ESLint e Prettier](#typescript-eslint-e-prettier)
+  - [Scripts de execução e build](#scripts-de-execução-e-build)
+- [🚀 Como Executar Localmente](#-como-executar-localmente)
     - [Pré-requisitos](#pré-requisitos)
     - [1️⃣ Clone o repositório](#1️⃣-clone-o-repositório)
     - [2️⃣ Configure as variáveis de ambiente](#2️⃣-configure-as-variáveis-de-ambiente)
@@ -106,42 +110,112 @@ Principais recursos:
 
 ---
 
+## 📌 Alterações recentes
+
+### Verificação de e-mail e recuperação de senha
+
+- **Cadastro**: ao se registrar, o usuário recebe um e-mail de verificação (Nodemailer/SMTP). A conta só fica ativa após clicar no link.
+- **Confirmação**: `GET /api/auth/confirmar?token=...` marca o usuário como verificado e redireciona para o frontend.
+- **Reenvio**: `POST /api/auth/reenviar-verificacao` com `{ "email": "..." }` reenvia o e-mail de verificação.
+- **Recuperação de senha**: `POST /api/auth/solicitarRecuperacaoSenha` com `{ "email": "..." }` envia um link por e-mail; o usuário redefine a senha em `POST /api/auth/redefinirSenha` com `{ "token", "novaSenha" }`.
+
+Configure no `.env`: `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS` (e opcionalmente `MAIL_FROM`). Para Gmail, use uma [Senha de app](https://support.google.com/accounts/answer/185833).
+
+### TypeScript, ESLint e Prettier
+
+- **TypeScript**: `tsconfig.json` com `strict`, source maps e exclusão de testes no build.
+- **ESLint**: configuração em `eslint.config.cjs` (flat config) com regras recomendadas para TypeScript.
+- **Prettier**: `.prettierrc` e `.prettierignore` para formatação consistente; integrado ao ESLint para evitar conflito.
+
+### Scripts de execução e build
+
+| Script | Comando | Descrição |
+|--------|---------|-----------|
+| **dev** | `npm run dev` | Sobe o servidor em modo desenvolvimento (reload automático). |
+| **build** | `npm run build` | Limpa `dist` e compila o TypeScript. |
+| **start** | `npm run start` | Roda o servidor a partir de `dist/server.js` (após o build). |
+| **clean** | `npm run clean` | Remove a pasta `dist`. |
+| **typecheck** | `npm run typecheck` | Verifica tipos TypeScript sem gerar arquivos. |
+| **lint** | `npm run lint` | Executa o ESLint em `src`. |
+| **lint:fix** | `npm run lint:fix` | Corrige automaticamente o que o ESLint permitir. |
+| **format** | `npm run format` | Formata o código com Prettier. |
+| **format:check** | `npm run format:check` | Verifica se o código está formatado. |
+| **test** | `npm run test` | Roda os testes com Jest. |
+
+---
+
 ## 🚀 Como Executar Localmente
 
 ### Pré-requisitos
-- Node.js 18+  
-- MongoDB (local ou Atlas)  
-- Git  
+
+- **Node.js 18+**
+- **MongoDB** (local ou Atlas)
+- **Git**
 
 ### 1️⃣ Clone o repositório
+
 ```bash
 git clone https://github.com/EstudeMy/EstudeMyBackendNode.git
 cd EstudeMyBackendNode
 ```
 
 ### 2️⃣ Configure as variáveis de ambiente
-Crie um arquivo `.env` na raiz do projeto:
+
+Crie um arquivo `.env` na raiz do projeto (não commite este arquivo):
 
 ```env
+# Servidor
 PORT=5000
-MONGO_URL=mongodb+srv://usuario:senha@cluster.mongodb.net/estudemy
-JWT_SECRET=chave_super_segura_aqui
-API_KEY=estudemy_api_key_2025
+NODE_ENV=development
+
+# Banco de dados
+MONGO_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/estudemy
+
+# Autenticação
+JWT_SECRET=sua_chave_secreta_aqui
+JWT_EXPIRES=7d
+
+# URLs (para links nos e-mails e redirects)
+FRONTEND_URL=http://localhost:3000
+BACKEND_URL=http://localhost:5000
+
+# E-mail (Nodemailer - verificação e recuperação de senha)
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USER=seu-email@gmail.com
+MAIL_PASS=senha_de_app_16_caracteres
+MAIL_FROM=seu-email@gmail.com
 ```
 
+Para Gmail, use uma [Senha de app](https://support.google.com/accounts/answer/185833) em `MAIL_PASS`.
+
 ### 3️⃣ Instale as dependências
+
 ```bash
 npm install
 ```
 
 ### 4️⃣ Execute o servidor
+
+**Desenvolvimento** (com reload ao salvar):
+
 ```bash
-node src/server.js
+npm run dev
 ```
 
+**Produção** (compilar e rodar):
+
+```bash
+npm run build
+npm run start
+```
+
+O servidor sobe em **http://localhost:5000** (ou na porta definida em `PORT`).
+
 ### 5️⃣ Acesse a documentação
-A documentação Swagger estará disponível em:  
-👉 http://localhost:5000/api-docs
+
+A documentação Swagger está em:  
+👉 **http://localhost:5000/api-docs**
 
 ---
 
@@ -149,8 +223,13 @@ A documentação Swagger estará disponível em:
 
 | Método | Endpoint | Descrição | Autenticação |
 |--------|----------|-----------|--------------|
-| POST | `/api/auth/register` | Cadastrar novo usuário | ❌ |
-| POST | `/api/auth/login` | Login (gera token JWT) | ❌ |
+| POST | `/api/auth/register` | Cadastrar novo usuário (envia e-mail de verificação) | ❌ |
+| POST | `/api/auth/login` | Login (gera token JWT; exige e-mail verificado) | ❌ |
+| GET | `/api/auth/confirmar?token=` | Confirmar e-mail (link enviado por e-mail) | ❌ |
+| POST | `/api/auth/reenviar-verificacao` | Reenviar e-mail de verificação | ❌ |
+| POST | `/api/auth/solicitarRecuperacaoSenha` | Solicitar recuperação de senha (envia e-mail) | ❌ |
+| POST | `/api/auth/redefinirSenha` | Redefinir senha com token recebido por e-mail | ❌ |
+| GET | `/api/auth/verify` | Verificar token JWT | ✅ |
 | GET | `/api/users` | Listar todos os usuários | ✅ |
 | GET | `/api/users/:id` | Buscar usuário por ID | ✅ |
 | PUT | `/api/users/:id` | Atualizar dados do usuário | ✅ |
@@ -177,10 +256,18 @@ Authorization: Bearer <seu_token_jwt>
 
 | Nome | Descrição | Exemplo |
 |------|------------|---------|
-| PORT | Porta de execução | 5000 |
-| MONGO_URL | URL do banco MongoDB | mongodb+srv://usuario:senha@cluster.mongodb.net/estudemy |
-| JWT_SECRET | Chave usada na geração dos tokens | super_secret_key |
-| API_KEY | Chave de comunicação entre serviços | estudemy_api_key_2025 |
+| PORT | Porta do servidor | 5000 |
+| NODE_ENV | Ambiente (development/production) | development |
+| MONGO_URI | URL de conexão com o MongoDB | mongodb+srv://usuario:senha@cluster.mongodb.net/estudemy |
+| JWT_SECRET | Chave para assinatura dos tokens JWT | super_secret_key |
+| JWT_EXPIRES | Validade do token (ex.: 7d) | 7d |
+| FRONTEND_URL | URL do frontend (redirects e links) | http://localhost:3000 |
+| BACKEND_URL | URL da API (links nos e-mails) | http://localhost:5000 |
+| MAIL_HOST | Servidor SMTP | smtp.gmail.com |
+| MAIL_PORT | Porta SMTP (587 ou 465) | 587 |
+| MAIL_USER | Usuário do e-mail | seu-email@gmail.com |
+| MAIL_PASS | Senha (Gmail: use Senha de app) | xxxx xxxx xxxx xxxx |
+| MAIL_FROM | Remetente dos e-mails | seu-email@gmail.com |
 
 ---
 
@@ -203,7 +290,7 @@ Authorization: Bearer <seu_token_jwt>
 | João Quaresma | 💻 Frontend - Backend Developer |
 | Gabriel Lupateli | 👨‍💻 Product Owner|
 | Beatriz Siqueira | 👩‍💻 Scrum Master|
-| Wallacy José | 👨‍💻 Frontend Devoloper |
+
 
 ---
 

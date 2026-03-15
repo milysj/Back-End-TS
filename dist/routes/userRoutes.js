@@ -46,3 +46,4 @@ router.put("/tema", authMiddleware_1.verificarToken, userController_1.atualizarT
 router.put("/idioma", authMiddleware_1.verificarToken, userController_1.atualizarIdioma);
 router.put("/atualizar-personagem", authMiddleware_1.verificarToken, userController_1.atualizarPersonagem);
 exports.default = router;
+//# sourceMappingURL=userRoutes.js.map

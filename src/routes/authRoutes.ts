@@ -60,9 +60,9 @@ router.post("/reenviar-verificacao", async (req, res, next) => {
         }
 
         await sendVerificationEmail(usuario.email, usuario.nome || "Usuário", usuario.verificationToken!);
-        res.status(200).json({ message: "E-mail de verificação reenviado com sucesso." });
+        return res.status(200).json({ message: "E-mail de verificação reenviado com sucesso." });
     } catch (error) {
-        next(error);
+        return next(error);
     }
 });
 

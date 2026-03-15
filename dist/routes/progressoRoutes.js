@@ -15,3 +15,4 @@ router.get("/verificar/:faseId", progressoController_1.verificarProgresso);
 router.get("/trilha/:trilhaId", progressoController_1.obterProgressoTrilha);
 router.get("/usuario", progressoController_1.obterDadosUsuario);
 exports.default = router;
+//# sourceMappingURL=progressoRoutes.js.map

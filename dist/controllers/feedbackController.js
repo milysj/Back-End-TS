@@ -40,3 +40,4 @@ const listarFeedbacks = async (req, res) => {
     }
 };
 exports.listarFeedbacks = listarFeedbacks;
+//# sourceMappingURL=feedbackController.js.map

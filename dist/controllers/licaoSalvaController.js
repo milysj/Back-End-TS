@@ -74,3 +74,4 @@ const verificarSeSalva = async (req, res) => {
     }
 };
 exports.verificarSeSalva = verificarSeSalva;
+//# sourceMappingURL=licaoSalvaController.js.map

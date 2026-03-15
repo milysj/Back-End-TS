@@ -27,3 +27,4 @@ const secaoSchema = new mongoose_1.default.Schema({
 // Índice para melhorar performance nas buscas por trilhaId
 secaoSchema.index({ trilhaId: 1, ordem: 1 });
 exports.default = mongoose_1.default.model("Secao", secaoSchema);
+//# sourceMappingURL=secao.js.map

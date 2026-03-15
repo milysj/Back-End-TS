@@ -19,3 +19,4 @@ const licaoSalvaSchema = new mongoose_1.default.Schema({
 // Índice único para evitar duplicatas (um usuário só pode salvar uma trilha uma vez)
 licaoSalvaSchema.index({ usuario: 1, trilha: 1 }, { unique: true });
 exports.default = mongoose_1.default.model("LicaoSalva", licaoSalvaSchema);
+//# sourceMappingURL=licaoSalva.js.map

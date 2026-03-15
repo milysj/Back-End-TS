@@ -262,11 +262,12 @@ const solicitarRecuperacaoSenha = async (req, res) => {
             await resetToken_1.default.deleteMany({ email, used: false });
             const token = crypto_1.default.randomBytes(32).toString("hex");
             await resetToken_1.default.create({ email, token });
-            const resetLink = `${process.env.FRONTEND_URL || "http://localhost:3000"}/recuperar-senha?token=${token}`;
-            console.log(`
-🔗 Link de recuperação para ${email}: ${resetLink}
-`);
-            // Em um ambiente real, aqui seria enviado um email.
+            try {
+                await (0, emailVerificationService_1.sendPasswordResetEmail)(email, token);
+            }
+            catch (err) {
+                console.error("Erro ao enviar e-mail de recuperação de senha:", err);
+            }
         }
         return res.status(200).json({ message: "Se o email estiver cadastrado, um link de recuperação será enviado." });
     }
@@ -414,3 +415,4 @@ const confirmarEmail = async (req, res) => {
     }
 };
 exports.confirmarEmail = confirmarEmail;
+//# sourceMappingURL=userController.js.map
