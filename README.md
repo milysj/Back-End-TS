@@ -155,8 +155,8 @@ Configure no `.env`: `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS` (e opcio
 ### 1️⃣ Clone o repositório
 
 ```bash
-git clone https://github.com/milysj/Back-End.git
-cd Back-End
+git clone https://github.com/milysj/Back-End-TS.git
+cd Back-End-TS
 ```
 
 ### 2️⃣ Configure as variáveis de ambiente
