@@ -50,5 +50,15 @@ export default {
   restoreMocks: true,
   
   // Mostrar informações detalhadas de cada teste
-  verbose: true
+  verbose: true,
+
+  collectCoverage: true,
+  coveragethreshold: {
+    global: {
+      branches: 80, 
+      lines: 80,
+      functions: 80,
+      statements: 80,
+    }
+  },
 };

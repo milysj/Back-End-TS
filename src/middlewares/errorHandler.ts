@@ -3,14 +3,14 @@ import { Request, Response, NextFunction } from 'express';
 // Interface para um erro com propriedades adicionais que podemos usar
 interface ApiError extends Error {
     statusCode?: number;
-    errors?: any; // Para erros de validação do Mongoose
+    errors?: Record<string, { message: string }>;
 }
 
 /**
  * Middleware de tratamento de erros.
  * Captura erros que ocorrem na aplicação e envia uma resposta HTTP formatada.
  */
-export const errorHandler = (err: ApiError, req: Request, res: Response, next: NextFunction): void => {
+export const errorHandler = (err: ApiError, req: Request, res: Response, next: NextFunction): void => { // eslint-disable-line @typescript-eslint/no-unused-vars
   console.error("🔥 Erro capturado pelo Error Handler:", err);
 
   const statusCode = err.statusCode || 500;
@@ -19,8 +19,7 @@ export const errorHandler = (err: ApiError, req: Request, res: Response, next: N
   if (err.name === "ValidationError") {
     res.status(400).json({
         message: "Erro de validação dos dados",
-        // Extrai as mensagens de erro de cada campo
-        errors: err.errors ? Object.values(err.errors).map((e: any) => e.message) : 'N/A',
+        errors: err.errors ? Object.values(err.errors).map((e: unknown) => (e as { message: string }).message) : 'N/A',
     });
     return;
   }
