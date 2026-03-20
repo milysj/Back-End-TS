@@ -4,7 +4,7 @@ import { describe, it, expect, afterAll } from '@jest/globals';
 import mongoose from 'mongoose';
 import User from '../models/user';
 
-
+jest.setTimeout(20000);
 
 describe('Fluxo de Usuário - Testes de Integração', () => {
 
@@ -25,12 +25,23 @@ describe('Fluxo de Usuário - Testes de Integração', () => {
             .send(testUser);
         
         expect(res.statusCode).toEqual(201);
-        expect(res.body).toHaveProperty('message', 'Usuário cadastrado com sucesso!');
+        expect(res.body).toHaveProperty('message', 'Usuário cadastrado com sucesso! Verifique seu e-mail para ativar a conta.');
 
         // Verifica se o usuário foi realmente salvo no banco
         const userInDb = await User.findOne({ email: testUser.email });
         expect(userInDb).not.toBeNull();
         expect(userInDb?.nome).toBe(testUser.nome);
+
+        // Ativa o usuário através do token de verificação
+        const verificationToken = userInDb?.verificationToken;
+        expect(verificationToken).toBeDefined();
+
+        const verifyRes = await request(app)
+            .get(`/api/auth/confirmar?token=${verificationToken}`);
+        expect([200,302]).toContain(verifyRes.statusCode);
+
+        const verifiedUser = await User.findOne({ email: testUser.email });
+        expect(verifiedUser?.isVerified).toBe(true);
     });
 
     it('ETAPA 2: Deve impedir o registro de um usuário com email duplicado', async () => {
@@ -100,5 +111,44 @@ describe('Fluxo de Usuário - Testes de Integração', () => {
         expect(res.body.email).toBe(testUser.email);
         expect(res.body.nome).toBe(testUser.nome);
         expect(res.body).not.toHaveProperty('senha'); // Garante que a senha não foi retornada
+    });
+
+    it('ETAPA 7: Deve atualizar dados pessoais', async () => {
+        const res = await request(app)
+            .put('/api/users/dados-pessoais')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({ nome: 'Nome Atualizado' });
+
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).toHaveProperty('message', 'Dados atualizados com sucesso!');
+        expect(res.body.usuario.nome).toBe('Nome Atualizado');
+    });
+
+    it('ETAPA 8: Deve mudar a senha do usuário', async () => {
+        const res = await request(app)
+            .put('/api/users/mudar-senha')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({ senhaAtual: testUser.senha, novaSenha: 'senhaNova123' });
+
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).toHaveProperty('message', 'Senha alterada com sucesso!');
+    });
+
+    it('ETAPA 9: Deve solicitar recuperação de senha', async () => {
+        const res = await request(app)
+            .post('/api/users/solicitar-recuperacao')
+            .send({ email: testUser.email });
+
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).toHaveProperty('message', 'Se o email estiver cadastrado, um link de recuperação será enviado.');
+    });
+
+    it('ETAPA 10: Deve verificar token de autorização com /api/users/verify', async () => {
+        const res = await request(app)
+            .get('/api/users/verify')
+            .set('Authorization', `Bearer ${authToken}`);
+
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).toHaveProperty('authenticated', true);
     });
 });

@@ -1,11 +1,13 @@
-import { resend } from "../config/resend";
+import { transporter } from "../config/mail";
 
-// Verifica se a chave da API do Resend está configurada.
-const hasResendConfig = () => !!process.env.RESEND_API_KEY;
+const hasMailConfig = () =>
+  !!process.env.MAIL_HOST &&
+  !!process.env.MAIL_PORT &&
+  !!process.env.MAIL_USER &&
+  !!process.env.MAIL_PASS;
 
-// O endereço 'from' para o Resend quando não se tem um domínio verificado.
-// O nome pode ser personalizado, mas o e-mail é fixo.
-const resendFromAddress = "EstudeMy <onboarding@resend.dev>";
+const getFromAddress = () =>
+  process.env.MAIL_FROM || process.env.MAIL_USER || "no-reply@localhost";
 
 export const sendVerificationEmail = async (
   to: string,
@@ -21,40 +23,33 @@ export const sendVerificationEmail = async (
     throw new Error("Token de verificação não fornecido.");
   }
 
-  if (!hasResendConfig()) {
-    console.warn(
-      "RESEND_API_KEY não configurada. O e-mail de verificação não será enviado."
-    );
+  if (!hasMailConfig()) {
+    console.warn("Config de e-mail incompleta (MAIL_*). E-mail de verificação não será enviado.");
     return;
   }
 
-  // Alinhado com o fluxo de recuperação de senha, o link agora aponta para o frontend.
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-  const verificationLink = `${frontendUrl}/confirmar?token=${token}`;
+  const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+  const verificationLink = `${backendUrl}/api/auth/confirmar?token=${token}`;
 
-  try {
-    await resend.emails.send({
-      from: resendFromAddress,
-      to: destinatario, // Lembrete: No modo de desenvolvimento, só funcionará se este for seu e-mail cadastrado no Resend.
-      subject: "Confirme seu e-mail - EstudeMy",
-      html: `
-        <h1>Olá, ${nomeUsuario}!</h1>
-        <p>Obrigado por se cadastrar. Para ativar sua conta, clique no botão abaixo:</p>
-        <p>
-          <a href="${verificationLink}"
-             style="background:#000;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;display:inline-block">
-             Confirmar E-mail
-          </a>
-        </p>
-        <p>Se o botão não funcionar, copie este link:</p>
-        <p>${verificationLink}</p>
-      `,
-    });
-  } catch (error) {
-    console.error("Erro ao enviar e-mail de verificação via Resend:", error);
-    // Lançar o erro pode ser uma boa ideia para que o chamador saiba que o envio falhou.
-    throw new Error("Falha ao enviar e-mail de verificação.");
-  }
+  const from = getFromAddress();
+
+  await transporter.sendMail({
+    from: `Suporte <${from}>`,
+    to: destinatario,
+    subject: "Confirme seu e-mail - EstudeMy",
+    html: `
+      <h1>Olá, ${nomeUsuario}!</h1>
+      <p>Obrigado por se cadastrar. Para ativar sua conta, clique no botão abaixo:</p>
+      <p>
+        <a href="${verificationLink}"
+           style="background:#000;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;display:inline-block">
+           Confirmar E-mail
+        </a>
+      </p>
+      <p>Se o botão não funcionar, copie este link:</p>
+      <p>${verificationLink}</p>
+    `,
+  });
 };
 
 export const sendPasswordResetEmail = async (
@@ -69,41 +64,34 @@ export const sendPasswordResetEmail = async (
     throw new Error("Token de recuperação de senha não fornecido.");
   }
 
-  if (!hasResendConfig()) {
-    console.warn(
-      "RESEND_API_KEY não configurada. O e-mail de recuperação não será enviado."
-    );
+  if (!hasMailConfig()) {
+    console.warn("Config de e-mail incompleta (MAIL_*). E-mail de recuperação não será enviado.");
     return;
   }
 
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const resetLink = `${frontendUrl}/recuperar-senha?token=${token}`;
 
-  try {
-    await resend.emails.send({
-      from: resendFromAddress,
-      to: to, // Lembrete: No modo de desenvolvimento, só funcionará se este for seu e-mail cadastrado no Resend.
-      subject: "Recuperação de senha - EstudeMy",
-      html: `
-        <h1>Recuperar senha</h1>
-        <p>Você solicitou a redefinição da sua senha no <strong>EstudeMy</strong>.</p>
-        <p>Clique no botão abaixo para criar uma nova senha:</p>
-        <p>
-          <a href="${resetLink}"
-             style="background:#000;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;display:inline-block">
-             Redefinir senha
-          </a>
-        </p>
-        <p>Se o botão não funcionar, copie e cole este link no navegador:</p>
-        <p>${resetLink}</p>
-        <p>Se você não solicitou essa alteração, ignore este e-mail.</p>
-      `,
-    });
-    console.warn(
-      `Link de recuperação (enviado para ${to}): ${resetLink}`
-    );
-  } catch (error) {
-    console.error("Erro ao enviar e-mail de recuperação via Resend:", error);
-    throw new Error("Falha ao enviar e-mail de recuperação.");
-  }
+  const from = getFromAddress();
+
+  await transporter.sendMail({
+    from: `Suporte <${from}>`,
+    to,
+    subject: "Recuperação de senha - EstudeMy",
+    html: `
+      <h1>Recuperar senha</h1>
+      <p>Você solicitou a redefinição da sua senha no <strong>EstudeMy</strong>.</p>
+      <p>Clique no botão abaixo para criar uma nova senha:</p>
+      <p>
+        <a href="${resetLink}"
+           style="background:#000;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;display:inline-block">
+           Redefinir senha
+        </a>
+      </p>
+      <p>Se o botão não funcionar, copie e cole este link no navegador:</p>
+      <p>${resetLink}</p>
+      <p>Se você não solicitou essa alteração, ignore este e-mail.</p>
+    `,
+  });
+  console.warn(resetLink);
 };
