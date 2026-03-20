@@ -1,6 +1,6 @@
 import request from 'supertest';
 import app from '../server'; // Importa a instância do app Express
-import { describe, it, expect, afterAll } from '@jest/globals';
+import { describe, it, expect, afterAll, jest } from '@jest/globals';
 import mongoose from 'mongoose';
 import User from '../models/user';
 

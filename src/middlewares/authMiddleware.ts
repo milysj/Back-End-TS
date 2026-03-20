@@ -84,7 +84,7 @@ export const verificarTokenOpcional = async (req: AuthRequest, res: Response, ne
                 req.user = user;
             }
         }
-    } catch (error) {
+    } catch {
         // Ignora erros
     }
     next();

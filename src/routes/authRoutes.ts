@@ -10,9 +10,6 @@ import { verificarToken } from "../middlewares/authMiddleware";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { sendVerificationEmail } from "../services/emailVerificationService";
-import User from "../models/user";
-import crypto from "crypto";
 
 const router = express.Router();
 

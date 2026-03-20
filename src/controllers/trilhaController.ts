@@ -15,7 +15,7 @@ export const criarTrilha = async (req: AuthRequest, res: Response): Promise<Resp
     const trilha = new Trilha({ ...req.body, usuario: userId, dataCriacao, imagem, usuariosIniciaram: [], visualizacoes: 0 });
     await trilha.save();
     const trilhaResponse = trilha.toObject();
-    delete (trilhaResponse as any).usuariosIniciaram;
+    delete (trilhaResponse as unknown as { usuariosIniciaram?: unknown }).usuariosIniciaram;
     return res.status(201).json(trilhaResponse);
   } catch (error) {
     const err = error as Error;
@@ -55,7 +55,7 @@ export const atualizarTrilha = async (req: AuthRequest, res: Response): Promise<
     const trilha = await Trilha.findOneAndUpdate(query, dadosAtualizacao, { new: true });
     if (!trilha) return res.status(404).json({ message: "Trilha não encontrada ou você não tem permissão para editar." });
     const trilhaResponse = trilha.toObject();
-    delete (trilhaResponse as any).usuariosIniciaram;
+    delete (trilhaResponse as unknown as { usuariosIniciaram?: unknown }).usuariosIniciaram;
     return res.json(trilhaResponse);
   } catch (error) {
     const err = error as Error;
@@ -122,12 +122,12 @@ export const iniciarTrilha = async (req: AuthRequest, res: Response): Promise<Re
     }
     const trilha = await Trilha.findById(trilhaId);
     if (!trilha) return res.status(404).json({ message: "Trilha não encontrada" });
-    if (!trilha.usuariosIniciaram.includes(userId as any)) {
-      trilha.usuariosIniciaram.push(userId as any);
+    if (!trilha.usuariosIniciaram.includes(userId)) {
+      trilha.usuariosIniciaram.push(userId);
       await trilha.save();
     }
     const trilhaResponse = trilha.toObject();
-    delete (trilhaResponse as any).usuariosIniciaram;
+    delete (trilhaResponse as unknown as { usuariosIniciaram?: unknown }).usuariosIniciaram;
     return res.json({ message: "Trilha iniciada com sucesso", trilha: trilhaResponse });
   } catch (error) {
     const err = error as Error;

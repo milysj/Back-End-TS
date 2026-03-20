@@ -6,29 +6,29 @@ jest.mock('../services/emailVerificationService', () => ({
   sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
 }));
 
-const faseController = require('../controllers/faseController');
-const feedbackController = require('../controllers/feedbackController');
-const licaoSalvaController = require('../controllers/licaoSalvaController');
-const perguntaController = require('../controllers/perguntaController');
-const userController = require('../controllers/userController');
-const homeController = require('../controllers/homeController');
-const progressoController = require('../controllers/progressoController');
-const authController = require('../controllers/authController');
-const { verificarToken, verificarProfessor, verificarAdministrador, verificarTokenOpcional } = require('../middlewares/authMiddleware');
-const { errorHandler } = require('../middlewares/errorHandler');
-const rankingController = require('../controllers/rankingController');
-const secaoController = require('../controllers/secaoController');
-const trilhaController = require('../controllers/trilhaController');
+import * as faseController from '../controllers/faseController';
+import * as feedbackController from '../controllers/feedbackController';
+import * as licaoSalvaController from '../controllers/licaoSalvaController';
+import * as perguntaController from '../controllers/perguntaController';
+import * as userController from '../controllers/userController';
+import * as homeController from '../controllers/homeController';
+import * as progressoController from '../controllers/progressoController';
+import * as authController from '../controllers/authController';
+import { verificarToken, verificarProfessor, verificarAdministrador } from '../middlewares/authMiddleware';
+import { errorHandler } from '../middlewares/errorHandler';
+import * as rankingController from '../controllers/rankingController';
+import * as secaoController from '../controllers/secaoController';
+import * as trilhaController from '../controllers/trilhaController';
 
-const Fase = require('../models/fase').default || require('../models/fase');
-const Trilha = require('../models/trilha').default || require('../models/trilha');
-const Secao = require('../models/secao').default || require('../models/secao');
-const Feedback = require('../models/feedback').default || require('../models/feedback');
-const bcrypt = require('bcryptjs');
-const LicaoSalva = require('../models/licaoSalva').default || require('../models/licaoSalva');
-const ResetToken = require('../models/resetToken').default || require('../models/resetToken');
-const Progresso = require('../models/progresso').default || require('../models/progresso');
-const User = require('../models/user').default || require('../models/user');
+import Fase from '../models/fase';
+import Trilha from '../models/trilha';
+import Secao from '../models/secao';
+import Feedback from '../models/feedback';
+import bcrypt from 'bcryptjs';
+import LicaoSalva from '../models/licaoSalva';
+import ResetToken from '../models/resetToken';
+import Progresso from '../models/progresso';
+import User from '../models/user';
 
 beforeEach(() => {
   jest.resetAllMocks();
@@ -268,7 +268,7 @@ describe('perguntaController full coverage', () => {
     expect(res.status).toHaveBeenCalledWith(404);
   });
   it('atualizarPergunta success updates pergunta and returns 200', async () => {
-    const faseMock: any = { trilhaId: 't1', perguntas: [{ enunciado: 'a', alternativas: ['x','y'], respostaCorreta: '0' }], save: jest.fn().mockResolvedValue(true) };
+    const faseMock: object = { trilhaId: 't1', perguntas: [{ enunciado: 'a', alternativas: ['x','y'], respostaCorreta: '0' }], save: jest.fn().mockResolvedValue(true) };
     Fase.findById = jest.fn().mockResolvedValue(faseMock);
     Trilha.findById = jest.fn().mockResolvedValue({ usuario: 'u1' });
     const req = { user: { _id: 'u1', tipoUsuario: 'ALUNO' }, params: { faseId: 'f1', perguntaIndex: '0' }, body: { enunciado: 'b', alternativas: ['x','y'], respostaCorreta: 1 } };
@@ -277,7 +277,7 @@ describe('perguntaController full coverage', () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
   it('deletarPergunta success deletes pergunta and returns 200', async () => {
-    const faseMock: any = { trilhaId: 't1', perguntas: [{ enunciado: 'a', alternativas: ['x','y'], respostaCorreta: '0' }], save: jest.fn().mockResolvedValue(true) };
+    const faseMock: object = { trilhaId: 't1', perguntas: [{ enunciado: 'a', alternativas: ['x','y'], respostaCorreta: '0' }], save: jest.fn().mockResolvedValue(true) };
     Fase.findById = jest.fn().mockResolvedValue(faseMock);
     Trilha.findById = jest.fn().mockResolvedValue({ usuario: 'u1' });
     const req = { user: { _id: 'u1', tipoUsuario: 'ALUNO' }, params: { faseId: 'f1', perguntaIndex: '0' } };
@@ -812,8 +812,6 @@ describe('deeper controller coverage', () => {
   });
 
   it('trilhaController buscarTrilhas filters by materia and q', async () => {
-    const sorted = { sort: jest.fn().mockResolvedValue([{}]), populate: jest.fn().mockReturnThis() };
-    const selected = { select: jest.fn().mockReturnThis(), populate: jest.fn().mockReturnThis(), sort: jest.fn().mockReturnValue(sorted) };
     Trilha.find = jest.fn().mockReturnValue({ select: jest.fn().mockReturnThis(), populate: jest.fn().mockReturnThis(), sort: jest.fn().mockResolvedValue([{}]) });
     const req = { query: { q: 'x', materia: 'Math' }, user: { tipoUsuario: 'ALUNO' } };
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
@@ -957,14 +955,14 @@ describe('cover remaining controller and middleware paths', () => {
   it('errorHandler handles ValidationError', () => {
     const err = { name: 'ValidationError', errors: { field: { message: 'bad' } } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-    errorHandler(err, {} as any, res as any, {} as any);
+    errorHandler(err as any, {} as any, res as any, {} as any);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
   it('errorHandler handles JsonWebTokenError', () => {
     const err = { name: 'JsonWebTokenError', message: 'bad' };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-    errorHandler(err, {} as any, res as any, {} as any);
+    errorHandler(err as any, {} as any, res as any, {} as any);
     expect(res.status).toHaveBeenCalledWith(401);
   });
 

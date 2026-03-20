@@ -19,10 +19,10 @@ jest.mock('../models/trilha', () => ({
   find: jest.fn(),
 }));
 
-const User: any = require('../models/user');
-const bcrypt: any = require('bcryptjs');
-const jwt: any = require('jsonwebtoken');
-const Trilha: any = require('../models/trilha');
+import User from '../models/user';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import Trilha from '../models/trilha';
 
 describe('authController', () => {
   beforeEach(() => {
