@@ -32,6 +32,17 @@ export default {
     '!src/**/__tests__/**'
   ],
   
+  collectCoverage: true,
+  coverageDirectory: "coverage",
+  coverageThreshold: {
+    global: {
+      statements: 90,
+      branches: 90,
+      functions: 90,
+      lines: 90
+    }
+  },
+
   // Limpar mocks entre cada teste
   clearMocks: true,
   
