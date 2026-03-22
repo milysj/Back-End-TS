@@ -24,6 +24,8 @@ export interface IUser extends Document {
   isVerified: boolean;
   verificationToken?: string;
   tokenExpires?: Date;
+  twoFactorSecret?: string;
+  twoFactorEnabled: boolean
 }
 
 
@@ -88,7 +90,9 @@ const UserSchema: Schema = new mongoose.Schema(
     },
     tokenExpires: { 
       type: Date 
-    }
+    },
+    twoFactorSecret: { type: String, select: false },
+    twoFactorEnabled: { type: Boolean, default: false }
 
   },
   { timestamps: true }

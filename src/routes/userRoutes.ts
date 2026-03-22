@@ -17,6 +17,12 @@ import {
     atualizarIdioma,
     listarUsuarios
 } from "../controllers/userController";
+import {
+    verify2FALogin,
+    iniciarSetup2FA,
+    confirmarSetup2FA,
+    desativar2FA,
+} from "../controllers/twoFactorController";
 import { verificarToken } from "../middlewares/authMiddleware";
 import multer from "multer";
 import path from "path";
@@ -44,6 +50,12 @@ const upload = multer({ storage });
 router.post("/login", loginUser);
 router.post("/register", registerUser);
 router.get("/termos", obterTermos);
+
+// --- 2FA (login: público; setup: autenticado) ---
+router.post("/2fa/verify-login", verify2FALogin);
+router.post("/2fa/setup", verificarToken, iniciarSetup2FA);
+router.post("/2fa/confirm", verificarToken, confirmarSetup2FA);
+router.post("/2fa/disable", verificarToken, desativar2FA);
 
 // --- Rotas de Perfil e Usuário ---
 router.post("/criar-perfil", verificarToken, upload.single('fotoPerfil'), criarPerfil);

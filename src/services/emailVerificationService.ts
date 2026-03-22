@@ -1,11 +1,71 @@
-import { resend } from "../config/resend";
+import { getSmtpTransporter, hasSmtpConfig } from "../config/mail";
+import { getResend, getResendFromEmail, hasResendConfig } from "../config/resend";
+import { getPublicApiBaseUrl, getFrontendBaseUrl } from "../config/publicUrls";
 
-// Verifica se a chave da API do Resend está configurada.
-const hasResendConfig = () => !!process.env.RESEND_API_KEY;
+export function isTransactionalEmailConfigured(): boolean {
+  return hasResendConfig() || hasSmtpConfig();
+}
 
-// O endereço 'from' para o Resend quando não se tem um domínio verificado.
-// O nome pode ser personalizado, mas o e-mail é fixo.
-const resendFromAddress = "EstudeMy <onboarding@resend.dev>";
+function escapeHtml(text: string): string {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/"/g, "&quot;");
+}
+
+function smtpFromAddress(): string {
+  return (
+    process.env.MAIL_FROM?.trim() ||
+    process.env.MAIL_USER?.trim() ||
+    "no-reply@localhost"
+  );
+}
+
+async function deliverHtmlEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<void> {
+  if (hasResendConfig()) {
+    const resend = getResend();
+    const from = getResendFromEmail();
+    if (!resend || !from) {
+      throw new Error("Resend configurado de forma incompleta.");
+    }
+    const { data, error } = await resend.emails.send({
+      from,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+    });
+    if (error) {
+      throw new Error(error.message || "Falha ao enviar e-mail via Resend.");
+    }
+    if (!data) {
+      throw new Error("Resend não retornou confirmação de envio.");
+    }
+    return;
+  }
+
+  const smtp = getSmtpTransporter();
+  if (smtp) {
+    const fromAddr = smtpFromAddress();
+    await smtp.sendMail({
+      from: `EstudeMy <${fromAddr}>`,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+      ...(process.env.MAIL_REPLY_TO?.trim()
+        ? { replyTo: process.env.MAIL_REPLY_TO.trim() }
+        : {}),
+    });
+    return;
+  }
+
+  console.warn(
+    "[email] Nenhum provedor configurado. Defina Resend (RESEND_API_KEY + RESEND_FROM_EMAIL) ou SMTP (MAIL_HOST, MAIL_PORT, MAIL_USER, MAIL_PASS)."
+  );
+}
 
 export const sendVerificationEmail = async (
   to: string,
@@ -21,40 +81,34 @@ export const sendVerificationEmail = async (
     throw new Error("Token de verificação não fornecido.");
   }
 
-  if (!hasResendConfig()) {
+  if (!isTransactionalEmailConfigured()) {
     console.warn(
-      "RESEND_API_KEY não configurada. O e-mail de verificação não será enviado."
+      "[email] E-mail de verificação não enviado: configure Resend ou SMTP para produção."
     );
     return;
   }
 
-  // Alinhado com o fluxo de recuperação de senha, o link agora aponta para o frontend.
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-  const verificationLink = `${frontendUrl}/confirmar?token=${token}`;
+  const apiBase = getPublicApiBaseUrl();
+  const verificationLink = `${apiBase}/api/auth/confirmar?token=${encodeURIComponent(token)}`;
+  const safeName = escapeHtml(nomeUsuario || "usuário");
 
-  try {
-    await resend.emails.send({
-      from: resendFromAddress,
-      to: destinatario, // Lembrete: No modo de desenvolvimento, só funcionará se este for seu e-mail cadastrado no Resend.
-      subject: "Confirme seu e-mail - EstudeMy",
-      html: `
-        <h1>Olá, ${nomeUsuario}!</h1>
-        <p>Obrigado por se cadastrar. Para ativar sua conta, clique no botão abaixo:</p>
-        <p>
-          <a href="${verificationLink}"
-             style="background:#000;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;display:inline-block">
-             Confirmar E-mail
-          </a>
-        </p>
-        <p>Se o botão não funcionar, copie este link:</p>
-        <p>${verificationLink}</p>
-      `,
-    });
-  } catch (error) {
-    console.error("Erro ao enviar e-mail de verificação via Resend:", error);
-    // Lançar o erro pode ser uma boa ideia para que o chamador saiba que o envio falhou.
-    throw new Error("Falha ao enviar e-mail de verificação.");
-  }
+  await deliverHtmlEmail({
+    to: destinatario,
+    subject: "Confirme seu e-mail - EstudeMy",
+    html: `
+      <h1>Olá, ${safeName}!</h1>
+      <p>Obrigado por se cadastrar. Para ativar sua conta, clique no botão abaixo:</p>
+      <p>
+        <a href="${verificationLink}"
+           style="background:#000;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;display:inline-block">
+           Confirmar e-mail
+        </a>
+      </p>
+      <p>Se o botão não funcionar, copie e cole este link no navegador:</p>
+      <p style="word-break:break-all">${verificationLink}</p>
+      <p style="color:#666;font-size:12px">O link expira em 24 horas. Se você não criou esta conta, ignore este e-mail.</p>
+    `,
+  });
 };
 
 export const sendPasswordResetEmail = async (
@@ -69,41 +123,35 @@ export const sendPasswordResetEmail = async (
     throw new Error("Token de recuperação de senha não fornecido.");
   }
 
-  if (!hasResendConfig()) {
+  if (!isTransactionalEmailConfigured()) {
     console.warn(
-      "RESEND_API_KEY não configurada. O e-mail de recuperação não será enviado."
+      "[email] E-mail de recuperação não enviado: configure Resend ou SMTP para produção."
     );
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-  const resetLink = `${frontendUrl}/recuperar-senha?token=${token}`;
+  const frontendBase = getFrontendBaseUrl();
+  const resetPath = (process.env.PASSWORD_RESET_FRONTEND_PATH || "/recuperar-senha").trim();
+  const normalizedPath = resetPath.startsWith("/") ? resetPath : `/${resetPath}`;
+  const sep = normalizedPath.includes("?") ? "&" : "?";
+  const resetLink = `${frontendBase}${normalizedPath}${sep}token=${encodeURIComponent(token)}`;
 
-  try {
-    await resend.emails.send({
-      from: resendFromAddress,
-      to: to, // Lembrete: No modo de desenvolvimento, só funcionará se este for seu e-mail cadastrado no Resend.
-      subject: "Recuperação de senha - EstudeMy",
-      html: `
-        <h1>Recuperar senha</h1>
-        <p>Você solicitou a redefinição da sua senha no <strong>EstudeMy</strong>.</p>
-        <p>Clique no botão abaixo para criar uma nova senha:</p>
-        <p>
-          <a href="${resetLink}"
-             style="background:#000;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;display:inline-block">
-             Redefinir senha
-          </a>
-        </p>
-        <p>Se o botão não funcionar, copie e cole este link no navegador:</p>
-        <p>${resetLink}</p>
-        <p>Se você não solicitou essa alteração, ignore este e-mail.</p>
-      `,
-    });
-    console.warn(
-      `Link de recuperação (enviado para ${to}): ${resetLink}`
-    );
-  } catch (error) {
-    console.error("Erro ao enviar e-mail de recuperação via Resend:", error);
-    throw new Error("Falha ao enviar e-mail de recuperação.");
-  }
+  await deliverHtmlEmail({
+    to: to.trim(),
+    subject: "Recuperação de senha - EstudeMy",
+    html: `
+      <h1>Redefinir senha</h1>
+      <p>Você solicitou a redefinição da sua senha no <strong>EstudeMy</strong>.</p>
+      <p>Clique no botão abaixo para criar uma nova senha:</p>
+      <p>
+        <a href="${resetLink}"
+           style="background:#000;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;display:inline-block">
+           Redefinir senha
+        </a>
+      </p>
+      <p>Se o botão não funcionar, copie e cole este link no navegador:</p>
+      <p style="word-break:break-all">${resetLink}</p>
+      <p style="color:#666;font-size:12px">O link expira em aproximadamente 1 hora. Se você não solicitou esta alteração, ignore este e-mail.</p>
+    `,
+  });
 };

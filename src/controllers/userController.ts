@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../services/emailVerificationService";
+import { getFrontendBaseUrl } from "../config/publicUrls";
+import { signTwoFactorPendingToken } from "../utils/twoFactorPendingToken";
 
 // Interface local para requisições autenticadas
 interface AuthRequest extends Request {
@@ -39,6 +41,20 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
             message: "Sua conta ainda não foi ativada. Verifique seu e-mail!" 
         });
     }
+
+        if (usuario.twoFactorEnabled) {
+            try {
+                const tempToken = signTwoFactorPendingToken(String(usuario._id));
+                return res.json({
+                    success: true,
+                    require2FA: true,
+                    tempToken,
+                });
+            } catch (e) {
+                console.error("Erro ao emitir token temporário de 2FA:", e);
+                return res.status(500).json({ message: "Erro interno no servidor." });
+            }
+        }
 
         const payload = { id: usuario._id, email: usuario.email, tipoUsuario: usuario.tipoUsuario };
         const token = jwt.sign(payload, secret, { expiresIn: '7d' });
@@ -387,8 +403,10 @@ export const confirmarEmail = async (req: Request, res: Response): Promise<void>
 
         // 3. Redirecionar para o Front-end
         // O navegador sairá da rota da API e abrirá seu site React na página de login
-        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-        res.redirect(`${frontendUrl}/login?email_verificado=true`);
+        const loginPath =
+          (process.env.FRONTEND_EMAIL_VERIFIED_REDIRECT_PATH || "/login?email_verificado=true").trim();
+        const path = loginPath.startsWith("/") ? loginPath : `/${loginPath}`;
+        res.redirect(`${getFrontendBaseUrl()}${path}`);
 
     } catch (error) {
         console.error("Erro ao confirmar e-mail:", error);
