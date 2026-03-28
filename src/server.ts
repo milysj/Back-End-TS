@@ -23,6 +23,11 @@ import trilhaRoutes from './routes/trilhaRoutes';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Atrás de proxy (Nginx, Render, etc.) para rate limit e cookies corretos por IP
+if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === '1') {
+    app.set('trust proxy', 1);
+}
+
 // --- Middlewares ---
 app.use(cors());
 app.use(cookieParser());

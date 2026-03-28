@@ -268,6 +268,21 @@ Authorization: Bearer <seu_token_jwt>
 | MAIL_USER | Usuário do e-mail | seu-email@gmail.com |
 | MAIL_PASS | Senha (Gmail: use Senha de app) | xxxx xxxx xxxx xxxx |
 | MAIL_FROM | Remetente dos e-mails | seu-email@gmail.com |
+| TRUST_PROXY | `1` se a API estiver atrás de proxy (IP correto no rate limit) | 1 |
+| TWO_FACTOR_PENDING_EXPIRES | Validade do JWT temporário após login (antes do TOTP), ex.: `5m` | 5m |
+| TWO_FACTOR_MAX_FAILED_ATTEMPTS | Falhas de TOTP/código antes do bloqueio por conta | 8 |
+| TWO_FACTOR_LOCKOUT_MINUTES | Minutos de bloqueio após exceder falhas | 15 |
+| RATE_LIMIT_LOGIN_MAX | Máx. tentativas de login por IP / janela (15 min) | 40 |
+| RATE_LIMIT_REGISTER_MAX | Máx. cadastros por IP / hora | 15 |
+| RATE_LIMIT_2FA_VERIFY_MAX | Máx. `POST /2fa/verify-login` por IP / 15 min | 30 |
+| RATE_LIMIT_2FA_AUTH_MAX | Máx. rotas 2FA autenticadas por IP / 15 min | 80 |
+
+### Autenticação em duas etapas (2FA)
+
+- **Login:** `POST /api/users/login` — se `require2FA: true`, use `tempToken` em `POST /api/users/2fa/verify-login` com `token` = código TOTP (6 dígitos) **ou** código de recuperação (exibido com hífens).
+- **Ativar:** `POST /api/users/2fa/setup` → `POST /api/users/2fa/confirm` — a resposta de **confirm** inclui `backupCodes` **uma vez**; guarde em local seguro.
+- **Novos códigos:** `POST /api/users/2fa/regenerate-backup-codes` (autenticado) com `senha` + `token` (TOTP ou código antigo).
+- **Desativar:** `POST /api/users/2fa/disable` com `senha` + `token` (TOTP ou código de recuperação).
 
 ---
 

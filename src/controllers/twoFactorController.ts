@@ -4,10 +4,68 @@ import * as jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User, { IUser } from '../models/user';
 import * as twoFactor from '../services/twoFactorservice';
+import {
+  generatePlainBackupCodes,
+  hashBackupCodes,
+  formatBackupCodeForUser,
+  normalizeBackupCodeInput,
+  tryConsumeBackupCode,
+} from '../services/twoFactorBackupCodes';
 import { PURPOSE_2FA_PENDING } from '../utils/twoFactorPendingToken';
 
 interface AuthRequest extends Request {
   user?: IUser;
+}
+
+function envInt(name: string, def: number): number {
+  const n = Number(process.env[name]);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
+}
+
+const max2faFailedAttempts = () => envInt('TWO_FACTOR_MAX_FAILED_ATTEMPTS', 8);
+const lockoutMinutes = () => envInt('TWO_FACTOR_LOCKOUT_MINUTES', 15);
+
+function looksLikeTotpInput(raw: string): boolean {
+  const t = raw.replace(/\s/g, '');
+  return /^\d{6,8}$/.test(t);
+}
+
+type SecondFactorOk =
+  | { ok: true; consumedBackup: false }
+  | { ok: true; consumedBackup: true; newBackupHashes: string[] }
+  | { ok: false };
+
+/**
+ * Valida TOTP (6–8 dígitos) ou código de recuperação (hex 16+ após normalizar).
+ */
+async function verifySecondFactor(
+  usuario: IUser & { twoFactorSecret?: string; twoFactorBackupCodes?: string[] },
+  tokenInput: string
+): Promise<SecondFactorOk> {
+  const raw = String(tokenInput ?? '').trim();
+  if (!raw) {
+    return { ok: false };
+  }
+
+  if (looksLikeTotpInput(raw) && usuario.twoFactorSecret) {
+    const totpOk = twoFactor.verifyToken(
+      usuario.twoFactorSecret,
+      raw.replace(/\s/g, '')
+    );
+    if (totpOk) {
+      return { ok: true, consumedBackup: false };
+    }
+  }
+
+  const norm = normalizeBackupCodeInput(raw);
+  if (norm.length >= 16 && usuario.twoFactorBackupCodes?.length) {
+    const remaining = await tryConsumeBackupCode(usuario.twoFactorBackupCodes, raw);
+    if (remaining) {
+      return { ok: true, consumedBackup: true, newBackupHashes: remaining };
+    }
+  }
+
+  return { ok: false };
 }
 
 function issueSessionToken(usuario: IUser, res: Response) {
@@ -34,13 +92,13 @@ function issueSessionToken(usuario: IUser, res: Response) {
 }
 
 /**
- * Troca JWT temporário (após senha correta) + código TOTP pela sessão completa.
+ * Troca JWT temporário (após senha correta) + código TOTP ou código de recuperação pela sessão completa.
  */
 export const verify2FALogin = async (req: Request, res: Response): Promise<Response> => {
   const { tempToken, token } = req.body;
 
   if (!tempToken || !token) {
-    return res.status(400).json({ message: 'tempToken e token (TOTP) são obrigatórios.' });
+    return res.status(400).json({ message: 'tempToken e token (TOTP ou código de recuperação) são obrigatórios.' });
   }
 
   const secret = process.env.JWT_SECRET;
@@ -59,15 +117,48 @@ export const verify2FALogin = async (req: Request, res: Response): Promise<Respo
       return res.status(401).json({ message: 'Token de verificação inválido.' });
     }
 
-    const usuario = await User.findById(decoded.id).select('+twoFactorSecret');
+    const usuario = await User.findById(decoded.id).select(
+      '+twoFactorSecret +twoFactorBackupCodes'
+    );
     if (!usuario || !usuario.twoFactorEnabled || !usuario.twoFactorSecret) {
       return res.status(400).json({ message: '2FA não está ativo para esta conta.' });
     }
 
-    const ok = twoFactor.verifyToken(usuario.twoFactorSecret, String(token).replace(/\s/g, ''));
-    if (!ok) {
+    const now = new Date();
+    if (usuario.twoFactorLockUntil && usuario.twoFactorLockUntil > now) {
+      const retryAfterSeconds = Math.ceil(
+        (usuario.twoFactorLockUntil.getTime() - now.getTime()) / 1000
+      );
+      return res.status(429).json({
+        message:
+          'Conta temporariamente bloqueada por muitas tentativas incorretas na verificação em duas etapas.',
+        retryAfterSeconds,
+      });
+    }
+    if (usuario.twoFactorLockUntil && usuario.twoFactorLockUntil <= now) {
+      usuario.twoFactorLockUntil = undefined;
+      usuario.twoFactorFailedAttempts = 0;
+    }
+
+    const second = await verifySecondFactor(usuario, String(token).replace(/\s/g, ''));
+    if (!second.ok) {
+      usuario.twoFactorFailedAttempts = (usuario.twoFactorFailedAttempts || 0) + 1;
+      if (usuario.twoFactorFailedAttempts >= max2faFailedAttempts()) {
+        usuario.twoFactorLockUntil = new Date(
+          Date.now() + lockoutMinutes() * 60 * 1000
+        );
+        usuario.twoFactorFailedAttempts = 0;
+      }
+      await usuario.save();
       return res.status(401).json({ message: 'Código inválido.' });
     }
+
+    if (second.consumedBackup) {
+      usuario.twoFactorBackupCodes = second.newBackupHashes;
+    }
+    usuario.twoFactorFailedAttempts = 0;
+    usuario.twoFactorLockUntil = undefined;
+    await usuario.save();
 
     return issueSessionToken(usuario, res);
   } catch (e) {
@@ -100,6 +191,9 @@ export const iniciarSetup2FA = async (req: AuthRequest, res: Response): Promise<
     const gen = twoFactor.generateSecret(usuario.email);
     usuario.twoFactorSecret = gen.base32;
     usuario.twoFactorEnabled = false;
+    usuario.twoFactorBackupCodes = [];
+    usuario.twoFactorFailedAttempts = 0;
+    usuario.twoFactorLockUntil = undefined;
     await usuario.save();
 
     const qrDataUrl = await QRCode.toDataURL(gen.otpauth_url!);
@@ -117,7 +211,7 @@ export const iniciarSetup2FA = async (req: AuthRequest, res: Response): Promise<
 };
 
 /**
- * Confirma o primeiro código e ativa o 2FA.
+ * Confirma o primeiro código e ativa o 2FA. Retorna códigos de recuperação **uma única vez**.
  */
 export const confirmarSetup2FA = async (req: AuthRequest, res: Response): Promise<Response> => {
   const { token } = req.body;
@@ -136,10 +230,21 @@ export const confirmarSetup2FA = async (req: AuthRequest, res: Response): Promis
       return res.status(401).json({ message: 'Código inválido.' });
     }
 
+    const plainCodes = generatePlainBackupCodes();
+    const hashed = await hashBackupCodes(plainCodes);
+
     usuario.twoFactorEnabled = true;
+    usuario.twoFactorBackupCodes = hashed;
+    usuario.twoFactorFailedAttempts = 0;
+    usuario.twoFactorLockUntil = undefined;
     await usuario.save();
 
-    return res.json({ success: true, message: 'Autenticação em dois fatores ativada.' });
+    return res.json({
+      success: true,
+      message:
+        'Autenticação em dois fatores ativada. Guarde os códigos de recuperação em local seguro; eles não serão exibidos novamente.',
+      backupCodes: plainCodes.map(formatBackupCodeForUser),
+    });
   } catch (e) {
     console.error('confirmarSetup2FA:', e);
     return res.status(500).json({ message: 'Erro ao confirmar o 2FA.' });
@@ -147,16 +252,20 @@ export const confirmarSetup2FA = async (req: AuthRequest, res: Response): Promis
 };
 
 /**
- * Desativa 2FA com senha atual + código TOTP.
+ * Desativa 2FA com senha atual + código TOTP ou código de recuperação.
  */
 export const desativar2FA = async (req: AuthRequest, res: Response): Promise<Response> => {
   const { senha, token } = req.body;
   if (!senha || !token) {
-    return res.status(400).json({ message: 'Senha e código TOTP são obrigatórios.' });
+    return res.status(400).json({
+      message: 'Senha e segundo fator (TOTP ou código de recuperação) são obrigatórios.',
+    });
   }
 
   try {
-    const usuario = await User.findById(req.user!._id).select('+senha +twoFactorSecret');
+    const usuario = await User.findById(req.user!._id).select(
+      '+senha +twoFactorSecret +twoFactorBackupCodes'
+    );
     if (!usuario?.twoFactorEnabled || !usuario.twoFactorSecret) {
       return res.status(400).json({ message: '2FA não está ativo.' });
     }
@@ -166,18 +275,69 @@ export const desativar2FA = async (req: AuthRequest, res: Response): Promise<Res
       return res.status(401).json({ message: 'Senha incorreta.' });
     }
 
-    const totpOk = twoFactor.verifyToken(usuario.twoFactorSecret, String(token).replace(/\s/g, ''));
-    if (!totpOk) {
+    const second = await verifySecondFactor(usuario, String(token).replace(/\s/g, ''));
+    if (!second.ok) {
       return res.status(401).json({ message: 'Código inválido.' });
     }
 
     usuario.twoFactorSecret = undefined;
     usuario.twoFactorEnabled = false;
+    usuario.twoFactorBackupCodes = [];
+    usuario.twoFactorFailedAttempts = 0;
+    usuario.twoFactorLockUntil = undefined;
     await usuario.save();
 
     return res.json({ success: true, message: 'Autenticação em dois fatores desativada.' });
   } catch (e) {
     console.error('desativar2FA:', e);
     return res.status(500).json({ message: 'Erro ao desativar o 2FA.' });
+  }
+};
+
+/**
+ * Gera novos códigos de recuperação (invalida os anteriores). Exige senha + TOTP ou um código antigo ainda válido.
+ */
+export const regenerarBackupCodes2FA = async (
+  req: AuthRequest,
+  res: Response
+): Promise<Response> => {
+  const { senha, token } = req.body;
+  if (!senha || !token) {
+    return res.status(400).json({
+      message: 'Senha e segundo fator (TOTP ou código de recuperação) são obrigatórios.',
+    });
+  }
+
+  try {
+    const usuario = await User.findById(req.user!._id).select(
+      '+senha +twoFactorSecret +twoFactorBackupCodes'
+    );
+    if (!usuario?.twoFactorEnabled || !usuario.twoFactorSecret) {
+      return res.status(400).json({ message: '2FA não está ativo.' });
+    }
+
+    const senhaOk = await bcrypt.compare(senha, usuario.senha!);
+    if (!senhaOk) {
+      return res.status(401).json({ message: 'Senha incorreta.' });
+    }
+
+    const second = await verifySecondFactor(usuario, String(token).replace(/\s/g, ''));
+    if (!second.ok) {
+      return res.status(401).json({ message: 'Código inválido.' });
+    }
+
+    const plainCodes = generatePlainBackupCodes();
+    usuario.twoFactorBackupCodes = await hashBackupCodes(plainCodes);
+    await usuario.save();
+
+    return res.json({
+      success: true,
+      message:
+        'Novos códigos de recuperação gerados. Guarde-os em local seguro; os códigos anteriores deixaram de valer.',
+      backupCodes: plainCodes.map(formatBackupCodeForUser),
+    });
+  } catch (e) {
+    console.error('regenerarBackupCodes2FA:', e);
+    return res.status(500).json({ message: 'Erro ao regenerar códigos de recuperação.' });
   }
 };

@@ -22,8 +22,15 @@ import {
     iniciarSetup2FA,
     confirmarSetup2FA,
     desativar2FA,
+    regenerarBackupCodes2FA,
 } from "../controllers/twoFactorController";
 import { verificarToken } from "../middlewares/authMiddleware";
+import {
+    loginRateLimiter,
+    registerRateLimiter,
+    verify2FALoginRateLimiter,
+    twoFAAuthenticatedRateLimiter,
+} from "../middlewares/authRateLimit";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -47,15 +54,21 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // --- Rotas de Autenticação e Registro ---
-router.post("/login", loginUser);
-router.post("/register", registerUser);
+router.post("/login", loginRateLimiter, loginUser);
+router.post("/register", registerRateLimiter, registerUser);
 router.get("/termos", obterTermos);
 
 // --- 2FA (login: público; setup: autenticado) ---
-router.post("/2fa/verify-login", verify2FALogin);
-router.post("/2fa/setup", verificarToken, iniciarSetup2FA);
-router.post("/2fa/confirm", verificarToken, confirmarSetup2FA);
-router.post("/2fa/disable", verificarToken, desativar2FA);
+router.post("/2fa/verify-login", verify2FALoginRateLimiter, verify2FALogin);
+router.post("/2fa/setup", verificarToken, twoFAAuthenticatedRateLimiter, iniciarSetup2FA);
+router.post("/2fa/confirm", verificarToken, twoFAAuthenticatedRateLimiter, confirmarSetup2FA);
+router.post("/2fa/disable", verificarToken, twoFAAuthenticatedRateLimiter, desativar2FA);
+router.post(
+    "/2fa/regenerate-backup-codes",
+    verificarToken,
+    twoFAAuthenticatedRateLimiter,
+    regenerarBackupCodes2FA
+);
 
 // --- Rotas de Perfil e Usuário ---
 router.post("/criar-perfil", verificarToken, upload.single('fotoPerfil'), criarPerfil);

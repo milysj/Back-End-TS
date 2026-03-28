@@ -30,6 +30,7 @@
   "homepage": "https://github.com/EstudeMy/EstudeMyBackendNode#readme",
   "description": "Backend do projeto **EstudeMy**, desenvolvido em **Node.js + Express + MongoDB**, com autenticação via **JWT** e senhas criptografadas com **bcrypt**.",
   "dependencies": {
+    "@google/genai": "^1.46.0",
     "@types/cookie-parser": "^1.4.10",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
@@ -37,6 +38,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.3.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.23.0",
     "multer": "^2.0.2",
