@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import User, { IUser } from '../models/user';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { appLogger, logHandledError } from '../logging/appLogger';
 
 export const login = async (req: Request, res: Response): Promise<Response> => {
   const { email, senha } = req.body;
@@ -50,6 +51,7 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    void appLogger.info('auth.legacy_login.success', { userId: String(user._id) });
     return res.json({
       token,
       user: {
@@ -61,7 +63,7 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
     });
 
   } catch (err) {
-    console.error(err);
+    logHandledError('authController.login', err);
     return res.status(500).json({ message: "Erro interno no servidor" });
   }
 };

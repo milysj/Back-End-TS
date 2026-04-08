@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Trilha, { ITrilha } from "../models/trilha";
 import { IUser } from "../models/user";
+import { appLogger, logHandledError } from "../logging/appLogger";
 
 interface AuthRequest extends Request {
     user?: IUser;
@@ -19,7 +20,7 @@ export const criarTrilha = async (req: AuthRequest, res: Response): Promise<Resp
     return res.status(201).json(trilhaResponse);
   } catch (error) {
     const err = error as Error;
-    console.error("Erro ao criar trilha:", err);
+    logHandledError("trilhaController.criarTrilha", err);
     return res.status(500).json({ message: "Erro ao criar trilha", error: err.message });
   }
 };
@@ -31,10 +32,11 @@ export const listarTrilhas = async (req: AuthRequest, res: Response): Promise<Re
     let trilhasQuery = Trilha.find(query).select("-usuariosIniciaram");
     if (tipoUsuario === "ADMINISTRADOR") trilhasQuery = trilhasQuery.populate({ path: "usuario", select: "nome username email tipoUsuario" });
     const trilhas = await trilhasQuery.sort({ createdAt: -1 });
+    void appLogger.info("trilha.list.success", { count: trilhas.length, userId: String(userId) });
     return res.json(trilhas);
   } catch (error) {
     const err = error as Error;
-    console.error("Erro ao listar trilhas:", err);
+    logHandledError("trilhaController.listarTrilhas", err);
     return res.status(500).json({ message: "Erro ao listar trilhas", error: err.message });
   }
 };

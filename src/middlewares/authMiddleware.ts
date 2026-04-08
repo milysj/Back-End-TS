@@ -2,6 +2,7 @@ import { Response, NextFunction, Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import User, { IUser } from '../models/user';
+import { appLogger, logHandledError } from '../logging/appLogger';
 
 // Interface local para requisições autenticadas
 interface AuthRequest extends Request {
@@ -37,6 +38,11 @@ export const verificarToken = async (req: AuthRequest, res: Response, next: Next
         next();
     } catch (error) {
         const err = error as Error;
+        if (err.name === 'TokenExpiredError' || err.name === 'JsonWebTokenError') {
+            void appLogger.warn('authMiddleware.verificarToken.jwt', { errorName: err.name });
+        } else {
+            logHandledError('authMiddleware.verificarToken', err);
+        }
         if (err.name === "TokenExpiredError") {
             return res.status(401).json({ success: false, message: "Token expirado. Faça login novamente." });
         }

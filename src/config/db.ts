@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { appLogger, logHandledError } from "../logging/appLogger";
 // Source - https://stackoverflow.com/a/79892633
 // Posted by Xoosk
 // Retrieved 2026-03-07, License - CC BY-SA 4.0
@@ -19,6 +20,7 @@ export const connectDB = async (): Promise<void> => {
 
     console.log(`✅ MongoDB conectado: ${conn.connection.host}`);
     console.log(`📊 Database: ${conn.connection.name}`);
+    void appLogger.info("db.connected", { host: conn.connection.host, name: conn.connection.name });
     
     mongoose.connection.on("error", (err) => {
       console.error(`❌ Erro de conexão com o MongoDB: ${err.message}`);
@@ -31,6 +33,7 @@ export const connectDB = async (): Promise<void> => {
   } catch (error) {
     const err = error as Error;
     console.error(`❌ Erro fatal ao conectar ao MongoDB: ${err.message}`);
+    logHandledError("config.connectDB", err);
     // Encerra o processo com falha se não conseguir conectar ao DB na inicialização
     process.exit(1);
   }

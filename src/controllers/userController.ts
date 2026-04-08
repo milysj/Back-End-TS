@@ -7,6 +7,7 @@ import crypto from "crypto";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../services/emailVerificationService";
 import { getFrontendBaseUrl } from "../config/publicUrls";
 import { signTwoFactorPendingToken } from "../utils/twoFactorPendingToken";
+import { appLogger, logHandledError } from "../logging/appLogger";
 
 // Interface local para requisições autenticadas
 interface AuthRequest extends Request {
@@ -51,7 +52,7 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
                     tempToken,
                 });
             } catch (e) {
-                console.error("Erro ao emitir token temporário de 2FA:", e);
+                logHandledError("userController.loginUser.2fa_temp_token", e);
                 return res.status(500).json({ message: "Erro interno no servidor." });
             }
         }
@@ -66,6 +67,7 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
         });
 
+        void appLogger.info("auth.login.success", { userId: String(usuario._id) });
         return res.json({ 
             success: true,
             token,
@@ -74,7 +76,7 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
         });
     } catch (error) {
         const err = error as Error;
-        console.error("Erro ao fazer login:", err);
+        logHandledError("userController.loginUser", err);
         return res.status(500).json({ message: "Erro ao fazer login", error: err.message });
     }
 };
@@ -129,13 +131,14 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
         try {
             await sendVerificationEmail(usuario.email, usuario.nome, verificationToken);
         } catch (error) {
-            console.error("Erro ao enviar e-mail de verificação:", error);
+            logHandledError("userController.registerUser.sendVerificationEmail", error);
         }
 
+        void appLogger.info("auth.register.success", { email });
         return res.status(201).json({ message: "Usuário cadastrado com sucesso! Verifique seu e-mail para ativar a conta." });
     } catch (error) {
         const err = error as Error;
-        console.error("Erro ao cadastrar usuário:", err);
+        logHandledError("userController.registerUser", err);
         return res.status(500).json({ message: "Erro ao cadastrar usuário", error: err.message });
     }
 };
@@ -180,7 +183,7 @@ export const criarPerfil = async (req: AuthRequest, res: Response): Promise<Resp
         return res.json({ message: "Perfil criado com sucesso!", usuario });
     } catch (error) {
         const err = error as Error & { code?: number };
-        console.error("Erro ao criar perfil:", err);
+        logHandledError("userController.criarPerfil", err, { code: err.code });
         if (err.code === 11000) return res.status(409).json({ message: "Username já está em uso." });
         return res.status(500).json({ message: "Erro ao criar perfil.", error: err.message });
     }
@@ -193,7 +196,7 @@ export const buscarMeusDados = async (req: AuthRequest, res: Response): Promise<
         return res.json(usuario);
     } catch (error) {
         const err = error as Error;
-        console.error("Erro ao buscar dados:", err);
+        logHandledError("userController.buscarMeusDados", err);
         return res.status(500).json({ message: "Erro ao buscar dados do usuário" });
     }
 };
@@ -214,7 +217,7 @@ export const atualizarDadosPessoais = async (req: AuthRequest, res: Response): P
         return res.json({ message: "Dados atualizados com sucesso!", usuario: usuarioAtualizado });
     } catch (error) {
         const err = error as Error;
-        console.error("Erro ao atualizar dados:", err);
+        logHandledError("userController.atualizarDadosPessoais", err);
         return res.status(500).json({ message: "Erro ao atualizar dados pessoais" });
     }
 };
@@ -242,7 +245,7 @@ export const mudarSenha = async (req: AuthRequest, res: Response): Promise<Respo
         return res.json({ message: "Senha alterada com sucesso!" });
     } catch (error) {
         const err = error as Error;
-        console.error("Erro ao mudar senha:", err);
+        logHandledError("userController.mudarSenha", err);
         return res.status(500).json({ message: "Erro ao mudar senha", error: err.message });
     }
 };
@@ -262,14 +265,14 @@ export const solicitarRecuperacaoSenha = async (req: Request, res: Response): Pr
             try {
                 await sendPasswordResetEmail(email, token);
             } catch (err) {
-                console.error("Erro ao enviar e-mail de recuperação de senha:", err);
+                logHandledError("userController.solicitarRecuperacaoSenha.sendPasswordResetEmail", err);
             }
         }
 
         return res.status(200).json({ message: "Se o email estiver cadastrado, um link de recuperação será enviado." });
     } catch (error) {
         const err = error as Error;
-        console.error("Erro ao solicitar recuperação:", err);
+        logHandledError("userController.solicitarRecuperacaoSenha", err);
         return res.status(500).json({ message: "Erro ao processar solicitação" });
     }
 };
@@ -294,7 +297,7 @@ export const redefinirSenha = async (req: Request, res: Response): Promise<Respo
         return res.json({ message: "Senha alterada com sucesso!" });
     } catch (error) {
         const err = error as Error;
-        console.error("Erro ao redefinir senha:", err);
+        logHandledError("userController.redefinirSenha", err);
         return res.status(500).json({ message: "Erro ao alterar senha" });
     }
 };
@@ -306,7 +309,7 @@ export const verificarTokenReset = async (req: Request, res: Response): Promise<
         return res.json({ valid: !!resetToken });
     } catch (error) {
         const err = error as Error;
-        console.error("Erro ao verificar token:", err);
+        logHandledError("userController.verificarTokenReset", err);
         return res.status(500).json({ message: "Erro ao verificar token" });
     }
 };
@@ -409,7 +412,7 @@ export const confirmarEmail = async (req: Request, res: Response): Promise<void>
         res.redirect(`${getFrontendBaseUrl()}${path}`);
 
     } catch (error) {
-        console.error("Erro ao confirmar e-mail:", error);
+        logHandledError("userController.confirmarEmail", error);
         res.status(500).json({ message: "Erro interno ao processar verificação." });
     }
 };

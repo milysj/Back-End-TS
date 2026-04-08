@@ -6,6 +6,10 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
+import { httpLogMiddleware } from './middlewares/httpLogMiddleware';
+import { errorHandler } from './middlewares/errorHandler';
+import { registerUnhandledProcessHandlers } from './middlewares/unhandledProcessHandlers';
+import { appLogger } from './logging/appLogger';
 
 // --- Importação das Rotas ---
 import authRoutes from './routes/authRoutes';
@@ -33,6 +37,7 @@ app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(httpLogMiddleware);
 
 // --- Registro das Rotas ---
 app.use('/api/auth', authRoutes);
@@ -52,13 +57,19 @@ app.get('/', (req, res) => {
     res.send('API do Estudemy está rodando!');
 });
 
+app.use(errorHandler);
+
 // --- Inicialização do Servidor ---
 if (process.env.NODE_ENV !== 'test') {
+    registerUnhandledProcessHandlers();
     // Conecta ao banco de dados apenas quando o servidor real é iniciado
     connectDB();
-    
+
     app.listen(PORT, () => {
-        console.log(`🚀 Servidor rodando em modo ${process.env.NODE_ENV} na porta ${PORT}`);
+        void appLogger.info('server.started', {
+            port: PORT,
+            nodeEnv: process.env.NODE_ENV || 'development',
+        });
     });
 }
 

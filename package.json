@@ -1,6 +1,6 @@
 {
   "name": "estudemybackendnode",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only --loader ts-node/esm src/server.ts",
@@ -30,7 +30,6 @@
   "homepage": "https://github.com/EstudeMy/EstudeMyBackendNode#readme",
   "description": "Backend do projeto **EstudeMy**, desenvolvido em **Node.js + Express + MongoDB**, com autenticação via **JWT** e senhas criptografadas com **bcrypt**.",
   "dependencies": {
-    "@google/genai": "^1.46.0",
     "@types/cookie-parser": "^1.4.10",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",

@@ -276,6 +276,76 @@ Authorization: Bearer <seu_token_jwt>
 | RATE_LIMIT_REGISTER_MAX | Máx. cadastros por IP / hora | 15 |
 | RATE_LIMIT_2FA_VERIFY_MAX | Máx. `POST /2fa/verify-login` por IP / 15 min | 30 |
 | RATE_LIMIT_2FA_AUTH_MAX | Máx. rotas 2FA autenticadas por IP / 15 min | 80 |
+| BETTER_STACK_SOURCE_TOKEN | Token da fonte HTTP no [Better Stack](https://betterstack.com/logs) (logs centralizados) | (opcional em dev) |
+| BETTER_STACK_INGEST_URL | URL de ingestão HTTP; use a exibida na fonte (região EU/US) | `https://in.logs.betterstack.com` |
+| BETTER_STACK_SERVICE_NAME | Nome do serviço nos eventos estruturados | `estudemy-backend` |
+
+### Observabilidade (Better Stack)
+
+1. Crie uma conta em [Better Stack](https://betterstack.com/) e um **Source** do tipo HTTP (veja [ingestão HTTP](https://betterstack.com/docs/logs/ingesting-data/http/logs/)).
+2. Copie o **source token** e o host de ingestão (se diferente do padrão) para o `.env`.
+3. Suba a API: cada requisição gera `http.request` e `http.response` (com `statusCode`, `durationMs`, rota, corpo/cabeçalhos **sanitizados**). Erros no middleware global, rejeições não tratadas e vários `catch` usam o evento `handled_error` ou `express.errorHandler`.
+4. **Validação**: no Better Stack, abra **Live tail** e dispare chamadas à API; os eventos devem aparecer em poucos segundos.
+
+**Alertas sugeridos** (crie em **Alerts** / monitoramento da sua fonte; os nomes exatos dos campos podem variar conforme a UI — use os campos estruturados `statusCode`, `durationMs`, `message`):
+
+| Objetivo | Ideia de regra |
+|----------|----------------|
+| Alta taxa de erros (500 ou 401) | Contagem de logs onde `message` = `http.response` **e** (`statusCode` = 500 **ou** `statusCode` = 401) **≥ 10** em **1 minuto** → notificação (e-mail/Slack/etc.). |
+| Pico de requisições | Contagem de logs onde `message` = `http.request` **≥ 100** em **1 minuto** → notificação. |
+| Lentidão | Contagem de logs onde `message` = `http.response` **e** `durationMs` **> 1000` em **1 minuto** (ou “qualquer ocorrência” com limiar de volume, conforme o produto) → notificação. |
+
+Se a interface do Better Stack usar **SQL alerts** ou **metric queries**, adapte os filtros para os mesmos critérios.
+
+### Docker (backend)
+
+Na raiz do repositório **Back-End-TS**:
+
+```bash
+# Imagem
+docker build -t estudemy-backend:latest .
+
+# Container (passe MONGO_URI, JWT_SECRET, etc. — use seu .env real ou -e)
+docker run --rm -p 5000:5000 \
+  -e PORT=5000 \
+  -e MONGO_URI="sua_uri_mongodb" \
+  -e JWT_SECRET="sua_chave" \
+  estudemy-backend:latest
+```
+
+### Docker Compose (API + MongoDB + frontend)
+
+Requisito: os repositórios **Back-End-TS** e **Front-End-TS** devem estar **lado a lado** no mesmo diretório pai (o arquivo `docker-compose.yml` usa o contexto `../Front-End-TS`).
+
+```bash
+cd Back-End-TS
+docker compose up --build
+```
+
+- **MongoDB:** `localhost:27017` (persistência no volume Docker `mongo_data`).
+- **API:** `http://localhost:5000` (`MONGO_URI` aponta para o serviço `mongo`).
+- **Frontend:** `http://localhost:3000` (imagem buildada com `NEXT_PUBLIC_API_URL=http://localhost:5000` para o navegador chamar a API no host).
+
+Defina um `JWT_SECRET` forte (substitui o padrão do compose):
+
+```bash
+# PowerShell
+$env:JWT_SECRET="sua_chave_secreta"; docker compose up --build
+```
+
+Ou copie `docker-compose.env.example` para um arquivo (ex.: `.env.compose`), preencha e rode:
+
+```bash
+docker compose --env-file .env.compose up --build
+```
+
+Variáveis extras (e-mail, Better Stack, etc.) podem ser adicionadas em `environment` do serviço `api` no `docker-compose.yml` ou via `env_file`.
+
+### Versões e tags Git
+
+- O `package.json` deste repositório está na série **0.0.0** até a entrega ser concluída.
+- Para **remover tags antigas no GitHub** (ajuste os nomes): `git push origin --delete tag NOME_DA_TAG` (repita para cada tag). Localmente: `git tag -d NOME_DA_TAG`.
+- **Somente ao finalizar a entrega**, alinhe a versão no `package.json` (ex.: `1.0.0`), faça commit e crie a tag: `git tag -a v1.0.0 -m "Release 1.0.0"` e `git push origin v1.0.0`.
 
 ### Autenticação em duas etapas (2FA)
 

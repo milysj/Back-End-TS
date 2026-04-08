@@ -13,11 +13,13 @@ import {
   visualizarTrilha,
   buscarTrilhaPorId,
 } from "../controllers/trilhaController";
+import { gerarTrilhaComIa } from "../controllers/trilhaIaController";
 
 const router = express.Router();
 
 // Rotas para gerenciar trilhas (criar, listar do professor, atualizar, deletar)
 router.post("/", verificarToken, verificarProfessor, criarTrilha);
+router.post("/gerar-com-ia", verificarToken, verificarProfessor, gerarTrilhaComIa);
 router.get("/", verificarToken, verificarProfessor, listarTrilhas);
 router.put("/:id", verificarToken, verificarProfessor, atualizarTrilha);
 router.delete("/:id", verificarToken, verificarProfessor, deletarTrilha);

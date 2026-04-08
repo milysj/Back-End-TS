@@ -25,7 +25,7 @@ describe('Fluxo de Usuário - Testes de Integração', () => {
             .send(testUser);
         
         expect(res.statusCode).toEqual(201);
-        expect(res.body).toHaveProperty('message', 'Usuário cadastrado com sucesso!');
+        expect(res.body.message).toContain('Usuário cadastrado com sucesso');
 
         // Verifica se o usuário foi realmente salvo no banco
         const userInDb = await User.findOne({ email: testUser.email });
@@ -43,6 +43,7 @@ describe('Fluxo de Usuário - Testes de Integração', () => {
     });
 
     it('ETAPA 3: Deve fazer login do usuário registrado e obter um token', async () => {
+        await User.updateOne({ email: testUser.email }, { isVerified: true });
         const res = await request(app)
             .post('/api/users/login')
             .send({
