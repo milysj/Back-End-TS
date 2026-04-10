@@ -10,6 +10,10 @@ import { verificarToken } from "../middlewares/authMiddleware";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
+import User from "../models/user";
+import { sendVerificationEmail } from "../services/emailVerificationService";
+
 
 const router = express.Router();
 
@@ -34,12 +38,13 @@ router.post("/login", loginUser);
 router.post("/register", registerUser);
 router.get("/verify", verificarToken, verificarAutenticacao);
 router.get("/confirmar", confirmarEmail);
-// router.post("/reenviar-verificacao", async (req, res, next) => {
-//     try {
-//         const { email } = req.body;
-//         if (!email || !email.toString().trim()) {
-//             return res.status(400).json({ message: "Email é obrigatório para reenviar verificação." });
-//         }
+
+ router.post("/reenviar-verificacao", async (req, res, next) => {
+     try {
+        const { email } = req.body;
+        if (!email || !email.toString().trim()) {
+            return res.status(400).json({ message: "Email é obrigatório para reenviar verificação." });
+         }
 
 //         const emailLower = email.toString().trim().toLowerCase();
 //         const usuario = await User.findOne({ email: emailLower });

@@ -869,7 +869,7 @@ describe('cover remaining controller and middleware paths', () => {
   });
 
   it('userController loginUser success returns token', async () => {
-    User.findOne = jest.fn().mockReturnValue({ select: jest.fn().mockResolvedValue({ _id: 'u1', email: 'x@x.com', senha: 'hash', tipoUsuario: 'ALUNO', isVerified: true }) });
+    User.findOne = jest.fn().mockReturnValue({ select: jest.fn().mockResolvedValue({ _id: 'u1', email: 'x@x.com', senha: 'hash', tipoUsuario: 'ALUNO', isVerified: true, twoFactorEnabled: false }) });
     bcrypt.compare = jest.fn().mockResolvedValue(true);
     process.env.JWT_SECRET = 'secret';
     const req = { body: { email: 'x@x.com', senha: '12345678' } };

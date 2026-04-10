@@ -1,11 +1,15 @@
-import dotenv from 'dotenv';
-// Carrega variáveis de ambiente do arquivo .env. DEVE SER A PRIMEIRA LINHA.
-dotenv.config();
+// Carrega .env antes de qualquer outro módulo ler process.env (tokens Better Stack, Mongo, etc.).
+import 'dotenv/config';
+import './logging/installConsolePatch';
 
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
+import { httpLogMiddleware } from './middlewares/httpLogMiddleware';
+import { errorHandler } from './middlewares/errorHandler';
+import { registerUnhandledProcessHandlers } from './middlewares/unhandledProcessHandlers';
+import { appLogger } from './logging/appLogger';
 
 // --- Importação das Rotas ---
 import authRoutes from './routes/authRoutes';
@@ -23,11 +27,17 @@ import trilhaRoutes from './routes/trilhaRoutes';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Atrás de proxy (Nginx, Render, etc.) para rate limit e cookies corretos por IP
+if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === '1') {
+    app.set('trust proxy', 1);
+}
+
 // --- Middlewares ---
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(httpLogMiddleware);
 
 // --- Registro das Rotas ---
 app.use('/api/auth', authRoutes);
@@ -47,13 +57,19 @@ app.get('/', (req, res) => {
     res.send('API do Estudemy está rodando!');
 });
 
+app.use(errorHandler);
+
 // --- Inicialização do Servidor ---
 if (process.env.NODE_ENV !== 'test') {
+    registerUnhandledProcessHandlers();
     // Conecta ao banco de dados apenas quando o servidor real é iniciado
     connectDB();
-    
+
     app.listen(PORT, () => {
-        console.log(`🚀 Servidor rodando em modo ${process.env.NODE_ENV} na porta ${PORT}`);
+        void appLogger.info('server.started', {
+            port: PORT,
+            nodeEnv: process.env.NODE_ENV || 'development',
+        });
     });
 }
 

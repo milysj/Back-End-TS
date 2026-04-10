@@ -1,0 +1,58 @@
+# Sobe MongoDB + API (Back-End-TS) + Next.js (Front-End-TS).
+# O frontend deve estar ao lado deste repositório: ../Front-End-TS
+#
+# Uso:
+#   cp docker-compose.env.example .env.compose   # opcional
+#   docker compose --env-file .env.compose up --build
+#
+# Ou defina JWT_SECRET no ambiente e: docker compose up --build
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5000}:${PORT:-5000}"
+    environment:
+      PORT: "${PORT:-5000}"
+      NODE_ENV: ${NODE_ENV:-development}
+      MONGO_URI: ${MONGO_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:5000}
+      # Better Stack Logs (opcional): crie um source em https://logs.betterstack.com
+      BETTER_STACK_SOURCE_TOKEN: ${BETTER_STACK_SOURCE_TOKEN:-}
+      BETTER_STACK_SERVICE_NAME: ${BETTER_STACK_SERVICE_NAME:-estudemy-backend}
+      BETTER_STACK_INGEST_URL: ${BETTER_STACK_INGEST_URL:-}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../Front-End-TS
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5000
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  mongo_data:

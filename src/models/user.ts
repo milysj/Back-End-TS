@@ -24,6 +24,14 @@ export interface IUser extends Document {
   isVerified: boolean;
   verificationToken?: string;
   tokenExpires?: Date;
+  twoFactorSecret?: string;
+  twoFactorEnabled: boolean;
+  /** Hashes bcrypt dos códigos de recuperação (uso único). */
+  twoFactorBackupCodes?: string[];
+  /** Tentativas falhas consecutivas na etapa 2FA (login). */
+  twoFactorFailedAttempts: number;
+  /** Bloqueio temporário após excesso de falhas (UTC). */
+  twoFactorLockUntil?: Date;
 }
 
 
@@ -88,7 +96,12 @@ const UserSchema: Schema = new mongoose.Schema(
     },
     tokenExpires: { 
       type: Date 
-    }
+    },
+    twoFactorSecret: { type: String, select: false },
+    twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorBackupCodes: { type: [String], default: [], select: false },
+    twoFactorFailedAttempts: { type: Number, default: 0 },
+    twoFactorLockUntil: { type: Date, default: null },
 
   },
   { timestamps: true }
