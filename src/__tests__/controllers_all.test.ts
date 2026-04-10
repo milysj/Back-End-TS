@@ -332,14 +332,23 @@ describe('userController coverage', () => {
     await userController.loginUser(req, res);
     expect(res.status).toHaveBeenCalledWith(401);
   });
-  it('loginUser not verified returns 403', async () => {
-    User.findOne = jest.fn().mockReturnValue({ select: jest.fn().mockResolvedValue({ _id: 'id', email: 'x@x.com', senha: '$2a$10$abc', tipoUsuario: 'ALUNO', isVerified: false }) });
+  it('loginUser allows unverified user while email verification is off', async () => {
+    User.findOne = jest.fn().mockReturnValue({
+      select: jest.fn().mockResolvedValue({
+        _id: 'id',
+        email: 'x@x.com',
+        senha: '$2a$10$abc',
+        tipoUsuario: 'ALUNO',
+        isVerified: false,
+        twoFactorEnabled: false,
+      }),
+    });
     bcrypt.compare = jest.fn().mockResolvedValue(true);
     const req = { body: { email: 'x@x.com', senha: '12345678' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn(), cookie: jest.fn() };
     process.env.JWT_SECRET = 'secret';
     await userController.loginUser(req, res);
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
   it('registerUser rejects invalid terms', async () => {
     const req = { body: { email: 'x@x.com', dataNascimento: '2000-01-01', senha: '12345678', aceiteTermos: false } };
@@ -735,7 +744,7 @@ describe('deeper controller coverage', () => {
     User.findOne = jest.fn().mockReturnValue({ select: jest.fn().mockResolvedValue(null) });
     const req = { body: { email: 'x@x.com', senha: '1234' }, headers: {}, cookies: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn(), cookie: jest.fn() };
-    await authController.login(req, res);
+    await authController.loginUser(req, res);
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
@@ -746,7 +755,7 @@ describe('deeper controller coverage', () => {
     const req = { body: { email: 'x@x.com', senha: '1234' }, headers: {}, cookies: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn(), cookie: jest.fn() };
     process.env.JWT_SECRET = 'secret';
-    await authController.login(req, res);
+    await authController.loginUser(req, res);
     expect(res.json).toHaveBeenCalled();
   });
 
