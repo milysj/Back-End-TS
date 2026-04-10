@@ -6,9 +6,15 @@ interface AuthRequest extends Request {
     user?: IUser;
 }
 
+interface UserScore {
+    userId: string;
+    xpTotal: number;
+    nivel: number;
+}
+
 const SCORE_SERVICE_URL = process.env.SCORE_SERVICE_URL || "http://localhost:5001";
 
-const chamarScoreService = async (endpoint: string, method = "GET", body: any = null, token: string | null = null): Promise<any | null> => {
+const chamarScoreService = async (endpoint: string, method = "GET", body: unknown = null, token: string | null = null): Promise<unknown | null> => {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -55,10 +61,10 @@ export const obterRankingNivel = async (req: AuthRequest, res: Response): Promis
     if (usuarios.length === 0) return res.json([]);
     const authHeader = req.headers.authorization || null;
     const userIds = usuarios.map((u) => u._id.toString());
-    const scoresData = await chamarScoreService("/api/score/usuarios", "POST", { userIds }, authHeader) || [];
-    const scoresMap = new Map<string, any>(scoresData.map((score: any) => [score.userId.toString(), score]));
+    const scoresData = (await chamarScoreService("/api/score/usuarios", "POST", { userIds }, authHeader) as UserScore[]) || [];
+    const scoresMap = new Map<string, UserScore>(scoresData.map((score) => [score.userId, score]));
     const rankingComNivel = usuarios.map((usuario) => {
-        const score = scoresMap.get(usuario._id.toString()) || { xpTotal: 0, nivel: 1 };
+        const score = scoresMap.get(usuario._id.toString()) || { userId: '', xpTotal: 0, nivel: 1 };
         return { _id: usuario._id.toString(), name: usuario.username || usuario.nome || "Usuário", initial: (usuario.username || usuario.nome || "U").charAt(0).toUpperCase(), personagem: usuario.personagem || "", fotoPerfil: usuario.fotoPerfil || "", xpTotal: score.xpTotal || 0, nivel: score.nivel || 1 };
       }).sort((a, b) => b.nivel - a.nivel || b.xpTotal - a.xpTotal);
     const rankingComPosicao = rankingComNivel.slice(0, 10).map((item, index) => ({ position: index + 1, ...item }));

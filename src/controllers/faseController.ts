@@ -38,7 +38,7 @@ export const criarFase = async (req: AuthRequest, res: Response): Promise<Respon
 export const listarFases = async (req: AuthRequest, res: Response): Promise<Response> => {
   try {
     const { trilhaId } = req.query;
-    let query: { trilhaId?: string } = {};
+    const query: { trilhaId?: string } = {};
     if (trilhaId && typeof trilhaId === 'string') query.trilhaId = trilhaId;
     const fases = await Fase.find(query).populate("trilhaId", "titulo descricao materia").sort({ ordem: 1, createdAt: -1 });
     return res.json(fases);
@@ -139,7 +139,7 @@ export const buscarFasesPorSecao = async (req: AuthRequest, res: Response): Prom
 export const concluirFase = async (req: AuthRequest, res: Response): Promise<Response> => {
   try {
     const userId = req.user!._id;
-    const { faseId, pontuacao, acertos } = req.body;
+    const { faseId, acertos } = req.body;
     if (!faseId) return res.status(400).json({ message: "faseId é obrigatório" });
     if (!mongoose.Types.ObjectId.isValid(faseId)) return res.status(400).json({ message: "ID da fase inválido" });
     const fase = await Fase.findById(faseId);

@@ -4,7 +4,7 @@ import { appLogger } from '../logging/appLogger';
 // Interface para um erro com propriedades adicionais que podemos usar
 interface ApiError extends Error {
     statusCode?: number;
-    errors?: any; // Para erros de validação do Mongoose
+    errors?: Record<string, { message: string }>;
 }
 
 /**
@@ -27,8 +27,7 @@ export const errorHandler = (err: ApiError, req: Request, res: Response, next: N
   if (err.name === "ValidationError") {
     res.status(400).json({
         message: "Erro de validação dos dados",
-        // Extrai as mensagens de erro de cada campo
-        errors: err.errors ? Object.values(err.errors).map((e: any) => e.message) : 'N/A',
+        errors: err.errors ? Object.values(err.errors).map((e: unknown) => (e as { message: string }).message) : 'N/A',
     });
     return;
   }

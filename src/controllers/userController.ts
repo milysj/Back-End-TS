@@ -20,12 +20,12 @@ interface AuthRequest extends Request {
 // =================================
 
 export const loginUser = async (req: Request, res: Response): Promise<Response> => {
-    let { email, senha } = req.body;
+    const { email, senha } = req.body;
     if (!email || !senha) return res.status(400).json({ message: "Email e senha são obrigatórios." });
-    email = email.toLowerCase();
+    const emailLower = email.toLowerCase();
 
     try {
-        const usuario = await User.findOne({ email }).select('+senha');
+        const usuario = await User.findOne({ email: emailLower }).select('+senha');
         if (!usuario) return res.status(401).json({ message: "Credenciais inválidas." });
 
         const senhaValida = await bcrypt.compare(senha, usuario.senha!);
@@ -83,12 +83,12 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
 
 export const registerUser = async (req: Request, res: Response): Promise<Response> => {
     try {
-        let { nome, email, senha, dataNascimento, tipoUsuario, aceiteTermos } = req.body;
+        const { email, senha, dataNascimento, tipoUsuario, aceiteTermos } = req.body;
 
         if (!email) {
             return res.status(400).json({ message: "Email é obrigatório." });
         }
-        email = email.toLowerCase();
+        const emailLower = email.toLowerCase();
 
         if (tipoUsuario === "ADMINISTRADOR") {
             return res.status(403).json({ message: "Criação de administradores não é permitida via API." });
@@ -108,7 +108,7 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
             return res.status(400).json({ message: "A senha deve ter no mínimo 8 caracteres." });
         }
 
-        const userExistente = await User.findOne({ email });
+        const userExistente = await User.findOne({ email: emailLower });
         if (userExistente) return res.status(409).json({ message: "Email já cadastrado." });
 
         const hashedSenha = await bcrypt.hash(senha, 10);

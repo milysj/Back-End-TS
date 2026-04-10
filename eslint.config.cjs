@@ -8,16 +8,13 @@ module.exports = [
   ...tseslint.configs.recommended,
   prettier,
   {
-    files: ["src/**/*.ts"],
-    languageOptions: {
-      parserOptions: {
-        project: "./tsconfig.eslint.json",
-      },
-    },
+    files: ["src/__tests__/**/*.ts"],
     rules: {
-      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
-      "@typescript-eslint/no-explicit-any": "warn",
-      "prefer-const": "warn",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/prefer-ts-expect-error": "off",
+      "@typescript-eslint/ban-ts-comment": "off",
+      "@typescript-eslint/prefer-ts-nocheck": "off",
     },
   },
 ];

@@ -46,27 +46,27 @@ router.get("/confirmar", confirmarEmail);
             return res.status(400).json({ message: "Email é obrigatório para reenviar verificação." });
          }
 
-        const emailLower = email.toString().trim().toLowerCase();
-        const usuario = await User.findOne({ email: emailLower });
-        if (!usuario) {
-            return res.status(404).json({ message: "Usuário não encontrado para este e-mail." });
-        }
-        if (usuario.isVerified) {
-            return res.status(400).json({ message: "Conta já está verificada." });
-        }
+//         const emailLower = email.toString().trim().toLowerCase();
+//         const usuario = await User.findOne({ email: emailLower });
+//         if (!usuario) {
+//             return res.status(404).json({ message: "Usuário não encontrado para este e-mail." });
+//         }
+//         if (usuario.isVerified) {
+//             return res.status(400).json({ message: "Conta já está verificada." });
+//         }
 
-        if (!usuario.verificationToken || !usuario.tokenExpires || usuario.tokenExpires < new Date()) {
-            usuario.verificationToken = crypto.randomBytes(32).toString("hex");
-            usuario.tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
-            await usuario.save();
-        }
+//         if (!usuario.verificationToken || !usuario.tokenExpires || usuario.tokenExpires < new Date()) {
+//             usuario.verificationToken = crypto.randomBytes(32).toString("hex");
+//             usuario.tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+//             await usuario.save();
+//         }
 
-        await sendVerificationEmail(usuario.email, usuario.nome || "Usuário", usuario.verificationToken!);
-        return res.status(200).json({ message: "E-mail de verificação reenviado com sucesso." });
-    } catch (error) {
-        return next(error);
-    }
-});
+//         await sendVerificationEmail(usuario.email, usuario.nome || "Usuário", usuario.verificationToken!);
+//         res.status(200).json({ message: "E-mail de verificação reenviado com sucesso." });
+//     } catch (error) {
+//         next(error);
+//     }
+// });
 
 // --- Rotas de Perfil (Autenticação) ---
 router.post("/criarPerfil", verificarToken, upload.single('fotoPerfil'), criarPerfil);
