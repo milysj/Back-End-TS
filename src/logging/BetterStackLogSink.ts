@@ -1,4 +1,5 @@
 import { sanitizeBody, sanitizeHeaders } from './sanitizeForLog';
+import { internalConsole } from './internalConsole';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -60,10 +61,10 @@ export class BetterStackLogSink {
         body,
       });
       if (!res.ok && res.status !== 202) {
-        console.error(`[BetterStackLogSink] ingest falhou: ${res.status} ${await res.text()}`);
+        internalConsole.error(`[BetterStackLogSink] ingest falhou: ${res.status} ${await res.text()}`);
       }
     } catch (e) {
-      console.error('[BetterStackLogSink] erro ao enviar log:', e);
+      internalConsole.error('[BetterStackLogSink] erro ao enviar log:', e);
     }
   }
 

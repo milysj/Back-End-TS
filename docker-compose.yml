@@ -30,10 +30,14 @@ services:
     environment:
       PORT: "5000"
       NODE_ENV: production
-      MONGO_URI: mongodb://mongo:27017/estudemy
-      JWT_SECRET: ${JWT_SECRET:-troque-esta-chave-em-producao}
+      MONGO_URI: ${MONGO_URI}
+      JWT_SECRET: ${JWT_SECRET}
       FRONTEND_URL: http://localhost:3000
       BACKEND_URL: http://localhost:5000
+      # Better Stack Logs (opcional): crie um source em https://logs.betterstack.com
+      BETTER_STACK_SOURCE_TOKEN: ${BETTER_STACK_SOURCE_TOKEN:-}
+      BETTER_STACK_SERVICE_NAME: ${BETTER_STACK_SERVICE_NAME:-estudemy-backend}
+      BETTER_STACK_INGEST_URL: ${BETTER_STACK_INGEST_URL:-}
     depends_on:
       mongo:
         condition: service_healthy

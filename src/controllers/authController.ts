@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { appLogger, logHandledError } from '../logging/appLogger';
 
-export const login = async (req: Request, res: Response): Promise<Response> => {
+export const loginUser = async (req: Request, res: Response): Promise<Response> => {
   const { email, senha } = req.body;
 
   if (!email || !senha) {

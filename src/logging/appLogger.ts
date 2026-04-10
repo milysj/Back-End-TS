@@ -1,12 +1,13 @@
 import { BetterStackLogSink, LogContext, LogLevel } from './BetterStackLogSink';
+import { internalConsole } from './internalConsole';
 
 const sink = new BetterStackLogSink();
 
 function consoleLine(level: LogLevel, message: string, context: LogContext): void {
   const line = `[${level.toUpperCase()}] ${message} ${Object.keys(context).length ? JSON.stringify(context) : ''}`;
-  if (level === 'error') console.error(line);
-  else if (level === 'warn') console.warn(line);
-  else console.log(line);
+  if (level === 'error') internalConsole.error(line);
+  else if (level === 'warn') internalConsole.warn(line);
+  else internalConsole.log(line);
 }
 
 function emit(level: LogLevel, message: string, context: LogContext = {}): void {

@@ -1,6 +1,6 @@
-import dotenv from 'dotenv';
-// Carrega variáveis de ambiente do arquivo .env. DEVE SER A PRIMEIRA LINHA.
-dotenv.config();
+// Carrega .env antes de qualquer outro módulo ler process.env (tokens Better Stack, Mongo, etc.).
+import 'dotenv/config';
+import './logging/installConsolePatch';
 
 import express from 'express';
 import cors from 'cors';
