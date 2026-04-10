@@ -1,7 +1,18 @@
-node_modules
+# Dependencies
+node_modules/
 
-.docker-compose.yml
+# Build
+dist/
+
+# Test coverage (Jest)
+coverage/
+*.lcov
+.nyc_output/
+
+# Environment
 .env
 .env.compose
-/dist
+
+# Docker (local overrides)
+.docker-compose.yml
 /coverage

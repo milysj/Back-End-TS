@@ -9,6 +9,12 @@ import { getFrontendBaseUrl } from "../config/publicUrls";
 import { signTwoFactorPendingToken } from "../utils/twoFactorPendingToken";
 import { appLogger, logHandledError } from "../logging/appLogger";
 
+/**
+ * TEMPORÁRIO: `false` = cadastro já nasce verificado, login não bloqueia, e-mail não é enviado.
+ * Quando tiver SMTP/Resend (domínio empresarial), mude para `true` e reative o envio em `registerUser`.
+ */
+const REQUIRE_EMAIL_VERIFICATION = false;
+
 // Interface local para requisições autenticadas
 interface AuthRequest extends Request {
     user?: IUser;
@@ -37,11 +43,11 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
             throw new Error("A configuração do servidor está incompleta.");
         }
 
-        if (usuario && !usuario.isVerified) {
-        return res.status(403).json({ 
-            message: "Sua conta ainda não foi ativada. Verifique seu e-mail!" 
-        });
-    }
+        if (REQUIRE_EMAIL_VERIFICATION && !usuario.isVerified) {
+            return res.status(403).json({
+                message: "Sua conta ainda não foi ativada. Verifique seu e-mail!",
+            });
+        }
 
         if (usuario.twoFactorEnabled) {
             try {
@@ -113,8 +119,12 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
 
         const hashedSenha = await bcrypt.hash(senha, 10);
 
-        const verificationToken = crypto.randomBytes(32).toString("hex");
-        const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+        let verificationToken: string | undefined;
+        let tokenExpires: Date | undefined;
+        if (REQUIRE_EMAIL_VERIFICATION) {
+            verificationToken = crypto.randomBytes(32).toString("hex");
+            tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        }
 
         const usuario = new User({
             ...req.body,
@@ -122,20 +132,26 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
             senha: hashedSenha,
             aceiteTermos: true,
             dataAceiteTermos: new Date(),
-            isVerified: false,
-            verificationToken,
-            tokenExpires,
+            isVerified: !REQUIRE_EMAIL_VERIFICATION,
+            ...(REQUIRE_EMAIL_VERIFICATION && verificationToken && tokenExpires
+                ? { verificationToken, tokenExpires }
+                : {}),
         });
         await usuario.save();
 
-        try {
-            await sendVerificationEmail(usuario.email, usuario.nome, verificationToken);
-        } catch (error) {
-            logHandledError("userController.registerUser.sendVerificationEmail", error);
+        if (REQUIRE_EMAIL_VERIFICATION && verificationToken) {
+            try {
+                await sendVerificationEmail(usuario.email, usuario.nome, verificationToken);
+            } catch (error) {
+                logHandledError("userController.registerUser.sendVerificationEmail", error);
+            }
         }
 
         void appLogger.info("auth.register.success", { email });
-        return res.status(201).json({ message: "Usuário cadastrado com sucesso! Verifique seu e-mail para ativar a conta." });
+        const msg = REQUIRE_EMAIL_VERIFICATION
+            ? "Usuário cadastrado com sucesso! Verifique seu e-mail para ativar a conta."
+            : "Usuário cadastrado com sucesso!";
+        return res.status(201).json({ message: msg });
     } catch (error) {
         const err = error as Error;
         logHandledError("userController.registerUser", err);
