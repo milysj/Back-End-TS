@@ -1,13 +1,27 @@
-import { Resend } from 'resend';
+import { Resend } from "resend";
 
-const apiKey = process.env.RESEND_API_KEY;
-
-if (!apiKey) {
-  console.warn(
-    'RESEND_API_KEY não encontrada. O envio de e-mail via Resend está desativado.'
-  );
+/**
+ * Resend: defina RESEND_API_KEY e RESEND_FROM_EMAIL (ex: "EstudeMy <noreply@seudominio.com>").
+ * O domínio do "from" precisa estar verificado no painel do Resend.
+ */
+export function getResendFromEmail(): string | null {
+  const v = process.env.RESEND_FROM_EMAIL?.trim();
+  return v || null;
 }
 
-// Inicializa o cliente Resend.
-// A API key é lida das variáveis de ambiente.
-export const resend = new Resend(apiKey);
+export function hasResendConfig(): boolean {
+  return !!(process.env.RESEND_API_KEY?.trim() && getResendFromEmail());
+}
+
+let client: Resend | null | undefined;
+
+export function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY?.trim();
+  if (!key) {
+    return null;
+  }
+  if (client === undefined) {
+    client = new Resend(key);
+  }
+  return client;
+}

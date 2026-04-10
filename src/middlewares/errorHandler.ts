@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { appLogger } from '../logging/appLogger';
 
 // Interface para um erro com propriedades adicionais que podemos usar
 interface ApiError extends Error {
@@ -10,10 +11,17 @@ interface ApiError extends Error {
  * Middleware de tratamento de erros.
  * Captura erros que ocorrem na aplicação e envia uma resposta HTTP formatada.
  */
-export const errorHandler = (err: ApiError, req: Request, res: Response, next: NextFunction): void => { // eslint-disable-line @typescript-eslint/no-unused-vars
-  console.error("🔥 Erro capturado pelo Error Handler:", err);
-
+export const errorHandler = (err: ApiError, req: Request, res: Response, next: NextFunction): void => {
   const statusCode = err.statusCode || 500;
+  void appLogger.error('express.errorHandler', {
+    requestId: req.requestId,
+    method: req.method,
+    path: req.path,
+    statusCode,
+    errorName: err.name,
+    errorMessage: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+  });
 
   // Tratamento específico para erros de validação do Mongoose
   if (err.name === "ValidationError") {

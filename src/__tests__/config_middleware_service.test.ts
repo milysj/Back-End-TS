@@ -36,9 +36,11 @@ describe('Config / Middleware / Service coverage improvements', () => {
     process.env.MAIL_PASS = 'password123';
 
     jest.resetModules();
-    const { transporter } = await import('../config/mail');
-    expect(transporter).toBeDefined();
-    expect(transporter).toHaveProperty('sendMail');
+    const { getSmtpTransporter } = await import('../config/mail');
+    const t = getSmtpTransporter();
+    expect(t).toBeDefined();
+    expect(t).not.toBeNull();
+    expect(t).toHaveProperty('sendMail');
 
     process.env.MAIL_HOST = oldHost;
     process.env.MAIL_PORT = oldPort;
@@ -51,15 +53,24 @@ describe('Config / Middleware / Service coverage improvements', () => {
     process.env.RESEND_API_KEY = 're_test_key';
 
     jest.resetModules();
-    const { resend } = await import('../config/resend');
-    expect(resend).toBeDefined();
+    const { getResend } = await import('../config/resend');
+    expect(getResend()).toBeDefined();
+    expect(getResend()).not.toBeNull();
 
     if (oldKey) process.env.RESEND_API_KEY = oldKey; else delete process.env.RESEND_API_KEY;
   });
 
 
   it('services emailVerificationService throws on missing token', async () => {
-    jest.doMock('../config/mail', () => ({ transporter: { sendMail: jest.fn() } }));
+    jest.doMock('../config/mail', () => ({
+      hasSmtpConfig: () => true,
+      getSmtpTransporter: () => ({ sendMail: jest.fn() }),
+    }));
+    jest.doMock('../config/resend', () => ({
+      hasResendConfig: () => false,
+      getResend: () => null,
+      getResendFromEmail: () => null,
+    }));
     const { sendVerificationEmail } = await import('../services/emailVerificationService');
     await expect(sendVerificationEmail('test@example.com', 'Teste', '')).rejects.toThrow('Token de verificação não fornecido.');
   });

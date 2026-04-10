@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { appLogger, logHandledError } from "../logging/appLogger";
 // Source - https://stackoverflow.com/a/79892633
 // Posted by Xoosk
 // Retrieved 2026-03-07, License - CC BY-SA 4.0
@@ -17,20 +18,18 @@ export const connectDB = async (): Promise<void> => {
     // As opções useNewUrlParser e useUnifiedTopology são depreciadas nas versões mais recentes do Mongoose
     const conn = await mongoose.connect(process.env.MONGO_URI);
 
-    console.log(`✅ MongoDB conectado: ${conn.connection.host}`);
-    console.log(`📊 Database: ${conn.connection.name}`);
-    
+    void appLogger.info("db.connected", { host: conn.connection.host, name: conn.connection.name });
+
     mongoose.connection.on("error", (err) => {
-      console.error(`❌ Erro de conexão com o MongoDB: ${err.message}`);
+      void appLogger.error("db.connection_error", { message: err.message });
     });
 
     mongoose.connection.on("disconnected", () => {
-      console.warn("⚠️ MongoDB desconectado");
+      void appLogger.warn("db.disconnected", {});
     });
-
   } catch (error) {
     const err = error as Error;
-    console.error(`❌ Erro fatal ao conectar ao MongoDB: ${err.message}`);
+    logHandledError("config.connectDB", err);
     // Encerra o processo com falha se não conseguir conectar ao DB na inicialização
     process.exit(1);
   }

@@ -31,7 +31,10 @@ jobs:
         run: npm run build
 
       - name: Testes unitarios
-        run: npm test    
+        run: npm test
+
+      - name: Build imagem Docker (validação)
+        run: docker build -t estudemy-backend:ci .
       #PARTE 1 - Até aqui
 
       #PARTE 2 - A partir daqui (descomentar)
