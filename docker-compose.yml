@@ -26,14 +26,14 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "${PORT:-5000}:${PORT:-5000}"
     environment:
-      PORT: "5000"
-      NODE_ENV: production
+      PORT: "${PORT:-5000}"
+      NODE_ENV: ${NODE_ENV:-development}
       MONGO_URI: ${MONGO_URI}
       JWT_SECRET: ${JWT_SECRET}
-      FRONTEND_URL: http://localhost:3000
-      BACKEND_URL: http://localhost:5000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:5000}
       # Better Stack Logs (opcional): crie um source em https://logs.betterstack.com
       BETTER_STACK_SOURCE_TOKEN: ${BETTER_STACK_SOURCE_TOKEN:-}
       BETTER_STACK_SERVICE_NAME: ${BETTER_STACK_SERVICE_NAME:-estudemy-backend}
