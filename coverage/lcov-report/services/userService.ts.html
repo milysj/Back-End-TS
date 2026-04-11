@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">77.77% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>14/18</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">66.66% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>4/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">77.77% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>14/18</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -92,60 +92,60 @@
 <a name='L27'></a><a href='#L27'>27</a>
 <a name='L28'></a><a href='#L28'>28</a>
 <a name='L29'></a><a href='#L29'>29</a>
-<a name='L30'></a><a href='#L30'>30</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L30'></a><a href='#L30'>30</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import User, { IUser } from '../models/user';</span>
-<span class="cstat-no" title="statement not covered" >import bcrypt from 'bcryptjs';</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import User, { IUser } from '../models/user';
+import bcrypt from 'bcryptjs';
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export a</span>sync function <span class="fstat-no" title="function not covered" >listarUsuarios(</span>): Promise&lt;IUser[]&gt; {
-<span class="cstat-no" title="statement not covered" >  return await User.find().select("-senha");</span>
+export async function listarUsuarios(): Promise&lt;IUser[]&gt; {
+  return await User.find().select("-senha");
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export a</span>sync function <span class="fstat-no" title="function not covered" >criarUsuario(</span>dados: Partial&lt;IUser&gt;): Promise&lt;IUser&gt; {
-<span class="cstat-no" title="statement not covered" >  if (!dados.senha) {</span>
-<span class="cstat-no" title="statement not covered" >    throw new Error('Senha é obrigatória para criar usuário.');</span>
+export async function criarUsuario(dados: Partial&lt;IUser&gt;): Promise&lt;IUser&gt; {
+  <span class="missing-if-branch" title="else path not taken" >E</span>if (!dados.senha) {
+    throw new Error('Senha é obrigatória para criar usuário.');
   }
   const senhaCriptografada = <span class="cstat-no" title="statement not covered" >await bcrypt.hash(dados.senha, 10);</span>
   const user = <span class="cstat-no" title="statement not covered" >new User({ ...dados, senha: senhaCriptografada });</span>
 <span class="cstat-no" title="statement not covered" >  return await user.save();</span>
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export a</span>sync function <span class="fstat-no" title="function not covered" >loginUsuario(</span>email: string, senha: string): Promise&lt;IUser | null&gt; {
-  const user = <span class="cstat-no" title="statement not covered" >await User.findOne({ email });</span>
-<span class="cstat-no" title="statement not covered" >  if (!user) {</span>
-<span class="cstat-no" title="statement not covered" >    return null;</span>
+export async function loginUsuario(email: string, senha: string): Promise&lt;IUser | null&gt; {
+  const user = await User.findOne({ email });
+  if (!user) {
+    return null;
   }
 &nbsp;
-  const senhaCorreta = <span class="cstat-no" title="statement not covered" >await bcrypt.compare(senha, user.senha);</span>
-<span class="cstat-no" title="statement not covered" >  if (!senhaCorreta) {</span>
-<span class="cstat-no" title="statement not covered" >    return null;</span>
+  const senhaCorreta = await bcrypt.compare(senha, user.senha);
+  <span class="missing-if-branch" title="else path not taken" >E</span>if (!senhaCorreta) {
+    return null;
   }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return user;</span>
@@ -157,7 +157,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-22T18:19:13.102Z
+                at 2026-04-11T00:06:20.259Z
             </div>
         <script src="../prettify.js"></script>
         <script>
