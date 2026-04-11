@@ -32,16 +32,17 @@ describe('Fluxo de Usuário - Testes de Integração', () => {
         expect(userInDb).not.toBeNull();
         expect(userInDb?.nome).toBe(testUser.nome);
 
-        // Ativa o usuário através do token de verificação
+        // Com verificação por e-mail ativa: confirma via link. Sem ela: usuário já nasce verificado.
         const verificationToken = userInDb?.verificationToken;
-        expect(verificationToken).toBeDefined();
-
-        const verifyRes = await request(app)
-            .get(`/api/auth/confirmar?token=${verificationToken}`);
-        expect([200,302]).toContain(verifyRes.statusCode);
-
-        const verifiedUser = await User.findOne({ email: testUser.email });
-        expect(verifiedUser?.isVerified).toBe(true);
+        if (verificationToken) {
+            const verifyRes = await request(app)
+                .get(`/api/auth/confirmar?token=${verificationToken}`);
+            expect([200, 302]).toContain(verifyRes.statusCode);
+            const verifiedUser = await User.findOne({ email: testUser.email });
+            expect(verifiedUser?.isVerified).toBe(true);
+        } else {
+            expect(userInDb?.isVerified).toBe(true);
+        }
     });
 
     it('ETAPA 2: Deve impedir o registro de um usuário com email duplicado', async () => {

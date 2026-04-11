@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Progresso from "../models/progresso";
 import User, { IUser } from "../models/user";
+import { appLogger, logHandledError } from "../logging/appLogger";
 
 interface AuthRequest extends Request {
     user?: IUser;
@@ -24,14 +25,17 @@ const chamarScoreService = async (endpoint: string, method = "GET", body: unknow
         const response = await fetch(`${SCORE_SERVICE_URL}${endpoint}`, options);
         clearTimeout(timeoutId);
         if (!response.ok) {
-            console.error(`[SCORE Service] Erro HTTP ${response.status} em ${endpoint}`);
+            void appLogger.warn("score_service_http_error", { status: response.status, endpoint });
             return null;
         }
         return await response.json();
     } catch (error) {
         const err = error as Error;
-        if (err.name === "AbortError" || err.message.includes("ECONNREFUSED")) console.warn(`[SCORE Service] Microsserviço não disponível (${SCORE_SERVICE_URL}).`);
-        else console.error(`[SCORE Service] Erro ao chamar ${endpoint}:`, err.message);
+        if (err.name === "AbortError" || err.message.includes("ECONNREFUSED")) {
+            void appLogger.warn("score_service_unavailable", { url: SCORE_SERVICE_URL });
+        } else {
+            void appLogger.error("score_service_fetch_error", { endpoint, errorMessage: err.message });
+        }
         return null;
     }
 };
@@ -51,7 +55,7 @@ export const obterRanking = async (req: Request, res: Response): Promise<Respons
     return res.json(rankingComPosicao);
   } catch (error) {
     const err = error as Error;
-    console.error("Erro ao obter ranking:", err);
+    logHandledError("rankingController.obterRanking", err);
     return res.status(500).json({ message: "Erro ao obter ranking", error: err.message });
   }
 };
@@ -71,7 +75,7 @@ export const obterRankingNivel = async (req: AuthRequest, res: Response): Promis
     return res.json(rankingComPosicao);
   } catch (error) {
     const err = error as Error;
-    console.error("Erro ao obter ranking de nível:", err);
+    logHandledError("rankingController.obterRankingNivel", err);
     return res.status(500).json({ message: "Erro ao obter ranking de nível", error: err.message });
   }
 };
