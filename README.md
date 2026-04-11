@@ -249,6 +249,9 @@ x-api-key: estudemy_api_key_2025
 ```http
 Authorization: Bearer <seu_token_jwt>
 ```
+Gráfico Better Stack - LOGS
+
+<img width="1577" height="860" alt="image" src="https://github.com/user-attachments/assets/33bbe656-64b0-48f4-9ebd-77b7bf1690cb" />
 
 ---
 
