@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { login } from '../controllers/authController';
+import { loginUser } from '../controllers/authController';
 import { getHomeData } from '../controllers/homeController';
 
 jest.mock('../models/user', () => ({
@@ -27,13 +27,14 @@ import Trilha from '../models/trilha';
 describe('authController', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    process.env.JWT_SECRET = 'test-secret';
   });
 
   it('should return 400 when missing email or senha', async () => {
     const req: any = { body: { email: '', senha: '' } };
     const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() };
 
-    await login(req, res);
+    await loginUser(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ message: 'Email e senha são obrigatórios.' });
@@ -44,7 +45,7 @@ describe('authController', () => {
     const req: any = { body: { email: 'teste@example.com', senha: 'senha' } };
     const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis(), cookie: jest.fn() };
 
-    await login(req, res);
+    await loginUser(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ message: 'Credenciais inválidas' });
@@ -56,23 +57,33 @@ describe('authController', () => {
     const req: any = { body: { email: 'teste@example.com', senha: 'senha' } };
     const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis(), cookie: jest.fn() };
 
-    await login(req, res);
+    await loginUser(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ message: 'Credenciais inválidas' });
   });
 
   it('should return token and user on success', async () => {
-    const mockUser = { _id: 'id1', nome: 'Nome', email: 'teste@example.com', tipoUsuario: 'ALUNO', senha: 'hash', materiaFavorita: 'Matematica', personagem: 'Guerreiro', fotoPerfil: '/img.png' };
+    const mockUser = {
+      _id: 'id1',
+      nome: 'Nome',
+      email: 'teste@example.com',
+      tipoUsuario: 'ALUNO',
+      senha: 'hash',
+      twoFactorEnabled: false,
+      materiaFavorita: 'Matematica',
+      personagem: 'Guerreiro',
+      fotoPerfil: '/img.png',
+    };
     User.findOne.mockReturnValue({ select: jest.fn().mockResolvedValue(mockUser) });
     bcrypt.compare.mockResolvedValue(true);
     const req: any = { body: { email: 'teste@example.com', senha: 'senha' } };
     const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis(), cookie: jest.fn() };
 
-    await login(req, res);
+    await loginUser(req, res);
 
     expect(jwt.sign).toHaveBeenCalled();
-    expect(res.cookie).toHaveBeenCalledTimes(2);
+    expect(res.cookie).toHaveBeenCalledTimes(1);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ user: expect.objectContaining({ email: 'teste@example.com' }) }));
   });
 });

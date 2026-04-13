@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">27.77% </span>
+                <span class="strong">66.66% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>5/18</span>
+                <span class='fraction'>12/18</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">50% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>1/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">33.33% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>1/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">23.52% </span>
+                <span class="strong">64.7% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>4/17</span>
+                <span class='fraction'>11/17</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -99,45 +99,44 @@
 <a name='L34'></a><a href='#L34'>34</a>
 <a name='L35'></a><a href='#L35'>35</a>
 <a name='L36'></a><a href='#L36'>36</a>
-<a name='L37'></a><a href='#L37'>37</a>
-<a name='L38'></a><a href='#L38'>38</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import mongoose from "mongoose";
+import { appLogger, logHandledError } from "../logging/appLogger";
 // Source - https://stackoverflow.com/a/79892633
 // Posted by Xoosk
 // Retrieved 2026-03-07, License - CC BY-SA 4.0
@@ -147,31 +146,29 @@ setServers(["1.1.1.1", "8.8.8.8"]);
 &nbsp;
 &nbsp;
 &nbsp;
-export const connectDB = <span class="fstat-no" title="function not covered" >async </span>(): Promise&lt;void&gt; =&gt; {
-<span class="cstat-no" title="statement not covered" >  try {</span>
-<span class="cstat-no" title="statement not covered" >    if (!process.env.MONGO_URI) {</span>
-<span class="cstat-no" title="statement not covered" >      throw new Error("MONGO_URI não definida nas variáveis de ambiente");</span>
+export const connectDB = async (): Promise&lt;void&gt; =&gt; {
+  try {
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (!process.env.MONGO_URI) {
+      throw new Error("MONGO_URI não definida nas variáveis de ambiente");
     }
 &nbsp;
     // As opções useNewUrlParser e useUnifiedTopology são depreciadas nas versões mais recentes do Mongoose
     const conn = <span class="cstat-no" title="statement not covered" >await mongoose.connect(process.env.MONGO_URI);</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    console.log(`✅ MongoDB conectado: ${conn.connection.host}`);</span>
-<span class="cstat-no" title="statement not covered" >    console.log(`📊 Database: ${conn.connection.name}`);</span>
-    
+<span class="cstat-no" title="statement not covered" >    void appLogger.info("db.connected", { host: conn.connection.host, name: conn.connection.name });</span>
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    mongoose.connection.on("error", <span class="fstat-no" title="function not covered" >(e</span>rr) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      console.error(`❌ Erro de conexão com o MongoDB: ${err.message}`);</span>
+<span class="cstat-no" title="statement not covered" >      void appLogger.error("db.connection_error", { message: err.message });</span>
     });
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    mongoose.connection.on("disconnected", <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      console.warn("⚠️ MongoDB desconectado");</span>
+<span class="cstat-no" title="statement not covered" >      void appLogger.warn("db.disconnected", {});</span>
     });
-&nbsp;
   } catch (error) {
-    const err = <span class="cstat-no" title="statement not covered" >error as Error;</span>
-<span class="cstat-no" title="statement not covered" >    console.error(`❌ Erro fatal ao conectar ao MongoDB: ${err.message}`);</span>
+    const err = error as Error;
+    logHandledError("config.connectDB", err);
     // Encerra o processo com falha se não conseguir conectar ao DB na inicialização
-<span class="cstat-no" title="statement not covered" >    process.exit(1);</span>
+    process.exit(1);
   }
 };
 &nbsp;</pre></td></tr></table></pre>
@@ -181,7 +178,7 @@ export const connectDB = <span class="fstat-no" title="function not covered" >as
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-22T18:19:13.102Z
+                at 2026-04-11T00:06:20.259Z
             </div>
         <script src="../prettify.js"></script>
         <script>
