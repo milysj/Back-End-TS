@@ -15,4 +15,3 @@ coverage/
 
 # Docker (local overrides)
 .docker-compose.yml
-/coverage

@@ -8,11 +8,11 @@ const SENSITIVE_HEADER_KEYS = new Set([
 const SENSITIVE_BODY_KEYS = new Set([
   'senha',
   'password',
-  'novaSenha',
+  'novasenha',
   'token',
-  'tempToken',
+  'temptoken',
   'codigo',
-  'backupCodes',
+  'backupcodes',
 ]);
 
 export function sanitizeHeaders(headers: Record<string, unknown> | undefined): Record<string, unknown> {

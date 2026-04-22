@@ -102,4 +102,5 @@ describe('Config / Middleware / Service coverage improvements', () => {
     const result = await loginUsuario('x@y.com', 'senha');
     expect(result).toBeNull();
   });
+
 });
