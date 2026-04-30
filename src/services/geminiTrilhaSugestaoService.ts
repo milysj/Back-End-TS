@@ -293,6 +293,8 @@ export async function gerarSugestaoTrilhaViaServicoIa(input: GerarSugestaoTrilha
         ? String((json as { message: unknown }).message)
         : json && typeof json === "object" && "erro" in json
           ? String((json as { erro: unknown }).erro)
+          : json && typeof json === "object" && "error" in json
+            ? String((json as { error: unknown }).error)
           : text?.slice(0, 500) || res.statusText;
     throw new Error(`Serviço de IA HTTP ${res.status}: ${msg}`);
   }
