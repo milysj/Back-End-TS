@@ -35,18 +35,14 @@ jobs:
 
       - name: Build imagem Docker (validação)
         run: docker build -t estudemy-backend:ci .
-      #PARTE 1 - Até aqui
 
-      #PARTE 2 - A partir daqui (descomentar)
       - name: Checkout do código
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0 # Buscar tags
-
+          fetch-depth: 0
 
       - name: Instalar semver
         run: npm install -g semver
-#
       - name: Criar nova tag caso não exista
         id: create_initial_tag
         env:
@@ -59,7 +55,6 @@ jobs:
             git tag -a v0.0.0 -m "Initial release"
             git push origin v0.0.0
           fi
-#
       - name: Calcular nova versão
         id: version
         run: |
@@ -108,7 +103,6 @@ jobs:
           
           echo "Nova versão: $NEW_VERSION"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-#
       - name: Atualizar versão no package.json
         run: |
           npm version ${{ steps.version.outputs.new_version }} --no-git-tag-version
@@ -128,29 +122,27 @@ jobs:
       - name: Rodar testes com coverage
         run: npm run test -- --coverage
 
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v2
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.projectKey=backend
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
-      - name: SonarQube Quality Gate
-            uses: SonarSource/sonarqube-quality-gate-action@v1
-            timeout-minutes: 5
-            env:
-              SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}   
+            -Dsonar.projectKey=milysj_Back-End-TS
+            -Dsonar.organization=milysj
+            -Dsonar.sources=src
+            -Dsonar.tests=src
+            -Dsonar.test.inclusions=**/*.test.ts,**/*.spec.ts
       
       - name: Enviar email em caso de falha
         if: failure()
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.gmail.com  # Update to your SMTP server
+          server_address: smtp.gmail.com
           server_port: 587
           username: ${{ secrets.EMAIL_ORIGIN }}
-          password: ${{ secrets.EMAIL_APP_PASSWORD }}  # Use app password, not regular password
+          password: ${{ secrets.EMAIL_APP_PASSWORD }}  
           subject: "Falha no CI - Back-End-TS"
           body: "O processo de CI falhou. Por favor, verifique os logs para mais detalhes."
           to: ${{ secrets.EMAIL_DESTINO }}
