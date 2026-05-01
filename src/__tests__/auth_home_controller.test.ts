@@ -63,6 +63,37 @@ describe('authController', () => {
     expect(res.json).toHaveBeenCalledWith({ message: 'Credenciais inválidas' });
   });
 
+  it('should return require2FA when twoFactorEnabled', async () => {
+    User.findOne.mockReturnValue({
+      select: jest.fn().mockResolvedValue({
+        _id: 'id1',
+        nome: 'Nome',
+        email: 'teste@example.com',
+        tipoUsuario: 'ALUNO',
+        senha: 'hash',
+        twoFactorEnabled: true,
+      }),
+    });
+    bcrypt.compare.mockResolvedValue(true);
+    const req: any = { body: { email: 'teste@example.com', senha: 'senha' } };
+    const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis(), cookie: jest.fn() };
+
+    await loginUser(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ require2FA: true, userId: 'id1' });
+    expect(res.cookie).not.toHaveBeenCalled();
+  });
+
+  it('should return 500 when findOne throws', async () => {
+    User.findOne.mockReturnValue({ select: jest.fn().mockRejectedValue(new Error('db')) });
+    const req: any = { body: { email: 'teste@example.com', senha: 'senha' } };
+    const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis(), cookie: jest.fn() };
+
+    await loginUser(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+
   it('should return token and user on success', async () => {
     const mockUser = {
       _id: 'id1',

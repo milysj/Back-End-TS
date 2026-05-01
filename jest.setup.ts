@@ -1,7 +1,9 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 
-let mongoServer: MongoMemoryServer;
+let mongoServer: MongoMemoryServer | undefined;
+
+jest.setTimeout(60_000);
 
 // Este bloco é executado uma vez antes de todos os testes
 beforeAll(async () => {
@@ -16,12 +18,14 @@ beforeAll(async () => {
 
   // Conecta ao banco de dados em memória
   await mongoose.connect(mongoUri);
-});
+}, 120_000);
 
 // Este bloco é executado uma vez depois de todos os testes
 afterAll(async () => {
   await mongoose.disconnect();
-  await mongoServer.stop();
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
 });
 
 
