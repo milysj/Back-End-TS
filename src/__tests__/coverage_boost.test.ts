@@ -19,6 +19,16 @@ jest.mock('../services/geminiTrilhaSugestaoService', () => ({
 
 import { gerarSugestaoTrilhaViaServicoIa } from '../services/geminiTrilhaSugestaoService';
 
+beforeAll(() => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+});
+
+afterAll(() => {
+  jest.restoreAllMocks();
+});
+
+
 describe('geminiController (LLM_DEMO_URL)', () => {
   const origEnv = { ...process.env };
   const savedFetch = global.fetch;

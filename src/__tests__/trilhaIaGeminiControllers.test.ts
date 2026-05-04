@@ -12,7 +12,17 @@ import geminiController from '../controllers/geminiController';
 const mockGerar = gerarSugestaoTrilhaViaServicoIa;
 
 describe('trilhaIaController', () => {
+  beforeAll(() => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
+
   beforeEach(() => {
+
     jest.resetAllMocks();
     process.env.TRILHA_IA_API_URL = 'http://localhost:3780';
   });

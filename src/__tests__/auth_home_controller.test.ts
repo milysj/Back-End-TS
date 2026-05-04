@@ -25,7 +25,17 @@ import jwt from 'jsonwebtoken';
 import Trilha from '../models/trilha';
 
 describe('authController', () => {
+  beforeAll(() => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
+
   beforeEach(() => {
+
     jest.resetAllMocks();
     process.env.JWT_SECRET = 'test-secret';
   });
