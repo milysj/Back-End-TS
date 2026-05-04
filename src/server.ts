@@ -62,7 +62,7 @@ app.use(errorHandler);
 // --- Inicialização do Servidor ---
 if (process.env.NODE_ENV !== 'test') {
     registerUnhandledProcessHandlers();
-    // Conecta ao banco de dados apenas quando o servidor real é iniciado
+    // Conecta ao banco de dados apenas quando o servidor real é iniciado 
     connectDB();
 
     app.listen(PORT, () => {
