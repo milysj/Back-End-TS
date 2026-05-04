@@ -33,6 +33,16 @@ import * as twoFactorPendingToken from '../utils/twoFactorPendingToken';
 
 const oid = '507f1f77bcf86cd799439011';
 
+beforeAll(() => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+});
+
+afterAll(() => {
+  jest.restoreAllMocks();
+});
+
+
 beforeEach(() => {
   jest.resetAllMocks();
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';

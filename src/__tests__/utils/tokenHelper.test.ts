@@ -4,7 +4,16 @@ import { JwtPayload } from 'jsonwebtoken';
 import { gerarToken } from '../../utils/tokenHelper';
 
 describe('Utils: tokenHelper', () => {
+  beforeAll(() => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
+
   describe('gerarToken', () => {
+
     it('deve gerar um token JWT válido a partir de um payload', () => {
       const payload = { id: '123', email: 'teste@teste.com' };
       const token = gerarToken(payload);

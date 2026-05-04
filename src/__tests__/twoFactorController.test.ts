@@ -49,7 +49,17 @@ async function createUser(overrides: Record<string, unknown> = {}) {
 }
 
 describe('twoFactorController', () => {
+  beforeAll(() => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
+
   beforeEach(() => {
+
     mockVerifyTokenSvc.mockReset();
     mockGenerateSecretSvc.mockClear();
     mockToDataURL.mockClear();
