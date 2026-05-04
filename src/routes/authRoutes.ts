@@ -69,3 +69,4 @@ router.get("/confirmar", confirmarEmail);
 router.post("/criarPerfil", verificarToken, upload.single('fotoPerfil'), criarPerfil);
 
 export default router;
+
