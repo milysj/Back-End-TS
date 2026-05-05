@@ -12,7 +12,7 @@ export interface GerarSugestaoTrilhaInput {
   fasesPorSecao?: number;
   perguntasPorFase?: number;
 }
-
+ 
 export interface PerguntaSugestao {
   enunciado: string;
   alternativas: string[];
