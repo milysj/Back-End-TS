@@ -13,32 +13,7 @@ interface UserScore {
     nivel: number;
 }
 
-const SCORE_SERVICE_URL = process.env.SCORE_SERVICE_URL || "http://localhost:5001";
-
-const chamarScoreService = async (endpoint: string, method = "GET", body: unknown = null, token: string | null = null): Promise<unknown | null> => {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        const options: RequestInit = { method, headers: { "Content-Type": "application/json" }, signal: controller.signal, };
-        if (token) (options.headers as Headers).set("Authorization", token.startsWith("Bearer ") ? token : `Bearer ${token}`);
-        if (body && ["POST", "PUT", "PATCH"].includes(method)) options.body = JSON.stringify(body);
-        const response = await fetch(`${SCORE_SERVICE_URL}${endpoint}`, options);
-        clearTimeout(timeoutId);
-        if (!response.ok) {
-            void appLogger.warn("score_service_http_error", { status: response.status, endpoint });
-            return null;
-        }
-        return await response.json();
-    } catch (error) {
-        const err = error as Error;
-        if (err.name === "AbortError" || err.message.includes("ECONNREFUSED")) {
-            void appLogger.warn("score_service_unavailable", { url: SCORE_SERVICE_URL });
-        } else {
-            void appLogger.error("score_service_fetch_error", { endpoint, errorMessage: err.message });
-        }
-        return null;
-    }
-};
+import { obterScoreUsuariosInterno } from "./scoreController";
 
 export const obterRanking = async (req: Request, res: Response): Promise<Response> => {
   try {
@@ -63,9 +38,13 @@ export const obterRankingNivel = async (req: AuthRequest, res: Response): Promis
   try {
     const usuarios = await User.find({ tipoUsuario: "ALUNO" }).select("nome username personagem fotoPerfil");
     if (usuarios.length === 0) return res.json([]);
-    const authHeader = req.headers.authorization || null;
     const userIds = usuarios.map((u) => u._id.toString());
-    const scoresData = (await chamarScoreService("/api/score/usuarios", "POST", { userIds }, authHeader) as UserScore[]) || [];
+    let scoresData: UserScore[] = [];
+    try {
+        scoresData = await obterScoreUsuariosInterno(userIds) as any[];
+    } catch (e) {
+        console.error("Erro interno ao obter scores:", e);
+    }
     const scoresMap = new Map<string, UserScore>(scoresData.map((score) => [score.userId, score]));
     const rankingComNivel = usuarios.map((usuario) => {
         const score = scoresMap.get(usuario._id.toString()) || { userId: '', xpTotal: 0, nivel: 1 };

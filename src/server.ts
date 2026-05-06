@@ -23,6 +23,7 @@ import progressoRoutes from './routes/progressoRoutes';
 import rankingRoutes from './routes/rankingRoutes';
 import secoesRoutes from './routes/secoesRoutes';
 import trilhaRoutes from './routes/trilhaRoutes';
+import scoreRoutes from './routes/scoreRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,6 +52,7 @@ app.use('/api/progresso', progressoRoutes);
 app.use('/api/ranking', rankingRoutes);
 app.use('/api/secoes', secoesRoutes);
 app.use('/api/trilhas', trilhaRoutes);
+app.use('/api/score', scoreRoutes);
 
 // Rota raiz para verificar se o servidor está online
 app.get('/', (req, res) => {
