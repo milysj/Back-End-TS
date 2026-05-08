@@ -60,6 +60,6 @@ export const gerarTrilhaComIa = async (req: AuthRequest, res: Response): Promise
   } catch (error) {
     const err = error as Error;
     console.error("Erro em gerarTrilhaComIa:", err.message);
-    return res.status(500).json({ message: err.message, error: "Erro interno no servidor" });
+    return res.status(500).json({ message: "Erro ao gerar sugestões com IA.", error: err.message });
   }
 };

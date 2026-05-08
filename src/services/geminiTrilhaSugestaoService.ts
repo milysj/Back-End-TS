@@ -72,15 +72,6 @@ interface IntegraTrilhaApiResponse {
   }[];
 }
 
-function resolveTrilhaIaPostUrl(): string {
-  const raw = process.env.TRILHA_IA_API_URL?.trim();
-  if (!raw) throw new Error("TRILHA_IA_API_URL não configurada.");
-  const base = raw.replace(/\/+$/, "");
-  if (/\/trilha\/gerar$/i.test(base)) return base;
-  if (/\/api$/i.test(base)) return `${base}/trilha/gerar`;
-  return `${base}/api/trilha/gerar`;
-}
-
 function dificuldadeParaNivel(
   d: DificuldadeTrilha
 ): "iniciante" | "intermediario" | "avancado" {
@@ -114,10 +105,11 @@ function perguntaIntegraParaSugestao(p: any): PerguntaSugestao {
       if (findIdx >= 0) idx = findIdx;
   }
 
-  let correta = slice[idx] || "";
-  if (!correta && slice[0]) correta = slice[0];
-  
-  return { enunciado: String(p.enunciado || p.pergunta || "").trim(), alternativas: slice, respostaCorreta: correta };
+  return { 
+    enunciado: String(p.enunciado || p.pergunta || "Pergunta sem enunciado").trim(), 
+    alternativas: slice, 
+    respostaCorreta: String(idx) 
+  };
 }
 
 /**
@@ -132,13 +124,14 @@ function mapIntegraResponseToSugestao(
     dificuldade: DificuldadeTrilha;
   }
 ): TrilhaSugestaoResposta {
-  const mods = integra.modulos || [];
+  const mods = (integra.modulos || []).filter(Boolean);
   const secoes: SecaoSugestao[] = [];
   let idx = 0;
   for (let s = 0; s < input.numeroSecoes; s++) {
     const fases: FaseSugestao[] = [];
     for (let f = 0; f < input.fasesPorSecao && idx < mods.length; f++, idx++) {
       const m = mods[idx];
+      if (!m) continue;
       fases.push({
         ordem: f + 1,
         titulo: (m.titulo || `Fase ${f + 1}`).trim(),
@@ -201,10 +194,19 @@ function normalizarSugestao(raw: TrilhaSugestaoResposta): TrilhaSugestaoResposta
     fases: (s.fases || []).map((f) => ({
       ...f,
       perguntas: (f.perguntas || []).map((p) => {
-        const alts = [...(p.alternativas || [])].map((a) => a.trim()).filter(Boolean);
+        const alts = [...(p.alternativas || [])].map((a) => String(a).trim()).filter(Boolean);
         let correta = (p.respostaCorreta || "").trim();
-        if (!alts.includes(correta) && alts[0]) correta = alts[0];
-        return { enunciado: p.enunciado.trim(), alternativas: alts, respostaCorreta: correta };
+        
+        // Se for um índice (0-3), aceita. Se for texto, verifica se está nas alternativas.
+        const isIndex = /^[0-3]$/.test(correta);
+        if (!isIndex && !alts.includes(correta) && alts[0]) {
+          correta = alts[0];
+        }
+        return { 
+          enunciado: String(p.enunciado || "Pergunta sem enunciado").trim(), 
+          alternativas: alts, 
+          respostaCorreta: correta 
+        };
       }),
     })),
   }));

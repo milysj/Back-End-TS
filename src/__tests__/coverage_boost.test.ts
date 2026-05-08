@@ -12,6 +12,10 @@ import { verificarToken, verificarTokenOpcional, verificarProfessor, verificarAd
 import { errorHandler } from '../middlewares/errorHandler';
 import User from '../models/user';
 import * as jwt from 'jsonwebtoken';
+import * as userService from '../services/userService';
+import * as emailVerificationService from '../services/emailVerificationService';
+import { gerarSugestaoTrilhaViaServicoIa } from '../services/geminiTrilhaSugestaoService';
+import bcrypt from 'bcryptjs';
 
 jest.mock('../services/geminiTrilhaSugestaoService', () => ({
   gerarSugestaoTrilhaViaServicoIa: jest.fn(),
@@ -614,5 +618,17 @@ describe('twoFactorPendingToken', () => {
     const { signTwoFactorPendingToken } = await import('../utils/twoFactorPendingToken');
     expect(() => signTwoFactorPendingToken('id')).toThrow('JWT_SECRET');
     process.env.JWT_SECRET = origSecret;
+  });
+});
+
+
+
+describe('emailVerificationService extra branches', () => {
+  it('deliverHtmlEmail warnings and recipient errors', async () => {
+    const { sendVerificationEmail, sendPasswordResetEmail } = await import('../services/emailVerificationService');
+    await expect(sendVerificationEmail('', 'N', 'T')).rejects.toThrow('Destinatário');
+    await expect(sendVerificationEmail('a@b.com', 'N', '')).rejects.toThrow('Token');
+    await expect(sendPasswordResetEmail('', 'tok')).rejects.toThrow('Destinatário');
+    await expect(sendPasswordResetEmail('a@b.com', '')).rejects.toThrow('Token');
   });
 });

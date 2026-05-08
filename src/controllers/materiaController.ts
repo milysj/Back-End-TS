@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import Materia from "../models/materia";
-import { appLogger } from "../logging/appLogger";
+import { appLogger, logHandledError } from "../logging/appLogger";
 
 export const getMaterias = async (req: Request, res: Response) => {
   try {
@@ -10,7 +10,7 @@ export const getMaterias = async (req: Request, res: Response) => {
       .lean();
     res.json(materias.map((m) => m.nome));
   } catch (error) {
-    appLogger.error("Erro ao buscar matérias:", error);
+    logHandledError('materiaController.getMaterias', error as Error);
     res.status(500).json({ message: "Erro ao buscar matérias." });
   }
 };

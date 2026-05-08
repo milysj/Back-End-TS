@@ -19,6 +19,7 @@ import { errorHandler } from '../middlewares/errorHandler';
 import * as rankingController from '../controllers/rankingController';
 import * as secaoController from '../controllers/secaoController';
 import * as trilhaController from '../controllers/trilhaController';
+import * as scoreController from '../controllers/scoreController';
 
 import Fase from '../models/fase';
 import Trilha from '../models/trilha';
@@ -28,6 +29,7 @@ import bcrypt from 'bcryptjs';
 import LicaoSalva from '../models/licaoSalva';
 import ResetToken from '../models/resetToken';
 import Progresso from '../models/progresso';
+import Score from '../models/score';
 import User from '../models/user';
 import * as twoFactorPendingToken from '../utils/twoFactorPendingToken';
 
@@ -90,7 +92,7 @@ describe('feedbackController', () => {
 
 describe('licaoSalvaController', () => {
   it('salvarTrilha missing trilhaId returns 400', async () => {
-    const req = { user: { _id: 'u1' }, body: {} }; const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' }, body: {} }; const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await licaoSalvaController.salvarTrilha(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
@@ -110,7 +112,7 @@ describe('perguntaController', () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
   it('criarPergunta missing fields returns 400', async () => {
-    const req = { user: { _id: 'u1', tipoUsuario: 'ADMINISTRADOR' }, body: {} }; const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const req = { user: { _id: '507f1f77bcf86cd799439011', tipoUsuario: 'ADMINISTRADOR' }, body: {} }; const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await perguntaController.criarPergunta(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
@@ -118,7 +120,7 @@ describe('perguntaController', () => {
 
 describe('progressoController', () => {
   it('calcularXP works', () => {
-    expect(progressoController.calcularXP(50)).toBe(250);
+    expect(scoreController.calcularXP(50)).toBe(250);
   });
   it('verificarProgresso missing returns false', async () => {
     Progresso.findOne = jest.fn().mockResolvedValue(null);
@@ -128,7 +130,7 @@ describe('progressoController', () => {
     expect(res.json).toHaveBeenCalledWith({ completado: false, progresso: null, respostasSalvas: [], perguntasRespondidas: [] });
   });
   it('obterProgressoTrilha missing trilhaId returns 400', async () => {
-    const req = { user: { _id: 'u1' }, params: {} };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' }, params: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await progressoController.obterProgressoTrilha(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
@@ -137,14 +139,14 @@ describe('progressoController', () => {
 
 describe('rankingController', () => {
   it('obterRanking returns list', async () => {
-    Progresso.aggregate = jest.fn().mockResolvedValue([{ _id: 'u1', username: 'x', totalFases: 1, totalAcertos: 1, totalPerguntas: 1, mediaAcertos: 100 }]);
+    Progresso.aggregate = jest.fn().mockResolvedValue([{ _id: '507f1f77bcf86cd799439011', username: 'x', totalFases: 1, totalAcertos: 1, totalPerguntas: 1, mediaAcertos: 100 }]);
     const req = {};
     const res = { json: jest.fn() };
     await rankingController.obterRanking(req, res);
     expect(res.json).toHaveBeenCalled();
   });
   it('obterRanking returns list with nome fallback and position', async () => {
-    Progresso.aggregate = jest.fn().mockResolvedValue([{ _id: 'u1', nome: 'N', totalFases: 1, totalAcertos: 1, totalPerguntas: 1, mediaAcertos: 50 }]);
+    Progresso.aggregate = jest.fn().mockResolvedValue([{ _id: '507f1f77bcf86cd799439011', nome: 'N', totalFases: 1, totalAcertos: 1, totalPerguntas: 1, mediaAcertos: 50 }]);
     const req = {};
     const res = { json: jest.fn() };
     await rankingController.obterRanking(req, res);
@@ -159,7 +161,7 @@ describe('rankingController', () => {
     expect(res.json).toHaveBeenCalledWith([]);
   });
   it('obterRankingNivel handles score service error and returns defaults', async () => {
-    const selectMock = jest.fn().mockResolvedValue([{ _id: 'u1', username: 'user', nome: 'User', personagem: 'Mago', fotoPerfil: '/x' }]);
+    const selectMock = jest.fn().mockResolvedValue([{ _id: '507f1f77bcf86cd799439011', username: 'user', nome: 'User', personagem: 'Mago', fotoPerfil: '/x' }]);
     User.find = jest.fn().mockReturnValue({ select: selectMock });
     global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500, json: jest.fn() });
     const req = { headers: {} };
@@ -169,18 +171,21 @@ describe('rankingController', () => {
   });
   it('obterRankingNivel uses score service data and sorts by nivel', async () => {
     const selectMock = jest.fn().mockResolvedValue([
-      { _id: 'u1', username: 'u1', personagem: 'P', fotoPerfil: '/x' },
-      { _id: 'u2', nome: 'User2', personagem: 'P2', fotoPerfil: '/y' },
+      { _id: '507f1f77bcf86cd799439011', username: 'u1', personagem: 'P', fotoPerfil: '/x' },
+      { _id: '507f1f77bcf86cd799439012', nome: 'User2', personagem: 'P2', fotoPerfil: '/y' },
     ]);
     User.find = jest.fn().mockReturnValue({ select: selectMock });
-    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue([
-      { userId: 'u1', xpTotal: 100, nivel: 3 },
-      { userId: 'u2', xpTotal: 50, nivel: 2 }
-    ]) });
+    Score.find = jest.fn().mockResolvedValue([
+      { userId: '507f1f77bcf86cd799439011', xpTotal: 500, nivel: 3 },
+      { userId: '507f1f77bcf86cd799439012', xpTotal: 300, nivel: 2 }
+    ]);
     const req = { headers: {} };
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
     await rankingController.obterRankingNivel(req, res);
-    expect(res.json).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ _id: 'u1', nivel: 3 }), expect.objectContaining({ _id: 'u2', nivel: 2 })]));
+    expect(res.json).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({ _id: '507f1f77bcf86cd799439011', nivel: 3 }), 
+      expect.objectContaining({ _id: '507f1f77bcf86cd799439012', nivel: 2 })
+    ]));
   });
 });
 
@@ -218,7 +223,7 @@ describe('trilhaController', () => {
   it('criarTrilha returns 201 for valid body', async () => {
     Trilha.prototype.save = jest.fn().mockResolvedValue(undefined);
     Trilha.prototype.toObject = jest.fn().mockReturnValue({ _id: 'id', titulo: 'x', descricao: 'd', materia: 'm', usuariosIniciaram: [] });
-    const req = { user: { _id: 'u1' }, body: { titulo: 'x', descricao: 'd', materia: 'm' } };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' }, body: { titulo: 'x', descricao: 'd', materia: 'm' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await trilhaController.criarTrilha(req, res);
     expect(res.status).toHaveBeenCalledWith(201);
@@ -228,7 +233,7 @@ describe('trilhaController', () => {
     const populateMock = jest.fn().mockReturnValue({ sort: sortMock });
     const selectMock = jest.fn().mockReturnValue({ populate: populateMock, sort: sortMock });
     Trilha.find = jest.fn().mockReturnValue({ select: selectMock, sort: sortMock });
-    const req = { user: { _id: 'u2', tipoUsuario: 'ALUNO' } };
+    const req = { user: { _id: '507f1f77bcf86cd799439012', tipoUsuario: 'ALUNO' } };
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
     await trilhaController.listarTrilhas(req, res);
     expect(res.json).toHaveBeenCalledWith(['t1']);
@@ -244,8 +249,8 @@ describe('trilhaController', () => {
     const sortMock = jest.fn().mockReturnValue({ limit: limitMock });
     const selectMock = jest.fn().mockReturnValue({ sort: sortMock });
     Trilha.find = jest.fn().mockReturnValue({ select: selectMock, sort: sortMock, limit: limitMock });
-    const req1 = { user: { _id: 'u1' } };
-    const req2 = { user: { _id: 'u1' } };
+    const req1 = { user: { _id: '507f1f77bcf86cd799439011' } };
+    const req2 = { user: { _id: '507f1f77bcf86cd799439011' } };
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
     await trilhaController.trilhasNovidades(req1, res);
     await trilhaController.trilhasContinue(req2, res);
@@ -276,7 +281,7 @@ describe('perguntaController full coverage', () => {
   });
   it('atualizarPergunta returns 404 if fase missing', async () => {
     Fase.findById = jest.fn().mockResolvedValue(null);
-    const req = { user: { _id: 'u1', tipoUsuario: 'ADMINISTRADOR' }, params: { faseId: '507f1f77bcf86cd799439011', perguntaIndex: '0' }, body: {} };
+    const req = { user: { _id: '507f1f77bcf86cd799439011', tipoUsuario: 'ADMINISTRADOR' }, params: { faseId: '507f1f77bcf86cd799439011', perguntaIndex: '0' }, body: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await perguntaController.atualizarPergunta(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
@@ -284,8 +289,8 @@ describe('perguntaController full coverage', () => {
   it('atualizarPergunta success updates pergunta and returns 200', async () => {
     const faseMock: object = { trilhaId: 't1', perguntas: [{ enunciado: 'a', alternativas: ['x','y'], respostaCorreta: '0' }], save: jest.fn().mockResolvedValue(true) };
     Fase.findById = jest.fn().mockResolvedValue(faseMock);
-    Trilha.findById = jest.fn().mockResolvedValue({ usuario: 'u1' });
-    const req = { user: { _id: 'u1', tipoUsuario: 'ALUNO' }, params: { faseId: 'f1', perguntaIndex: '0' }, body: { enunciado: 'b', alternativas: ['x','y'], respostaCorreta: 1 } };
+    Trilha.findById = jest.fn().mockResolvedValue({ usuario: '507f1f77bcf86cd799439011' });
+    const req = { user: { _id: '507f1f77bcf86cd799439011', tipoUsuario: 'ALUNO' }, params: { faseId: 'f1', perguntaIndex: '0' }, body: { enunciado: 'b', alternativas: ['x','y'], respostaCorreta: 1 } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await perguntaController.atualizarPergunta(req, res);
     expect(res.status).toHaveBeenCalledWith(200);
@@ -293,8 +298,8 @@ describe('perguntaController full coverage', () => {
   it('deletarPergunta success deletes pergunta and returns 200', async () => {
     const faseMock: object = { trilhaId: 't1', perguntas: [{ enunciado: 'a', alternativas: ['x','y'], respostaCorreta: '0' }], save: jest.fn().mockResolvedValue(true) };
     Fase.findById = jest.fn().mockResolvedValue(faseMock);
-    Trilha.findById = jest.fn().mockResolvedValue({ usuario: 'u1' });
-    const req = { user: { _id: 'u1', tipoUsuario: 'ALUNO' }, params: { faseId: 'f1', perguntaIndex: '0' } };
+    Trilha.findById = jest.fn().mockResolvedValue({ usuario: '507f1f77bcf86cd799439011' });
+    const req = { user: { _id: '507f1f77bcf86cd799439011', tipoUsuario: 'ALUNO' }, params: { faseId: 'f1', perguntaIndex: '0' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await perguntaController.deletarPergunta(req, res);
     expect(res.status).toHaveBeenCalledWith(200);
@@ -304,7 +309,7 @@ describe('perguntaController full coverage', () => {
 describe('feedbackController extra', () => {
   it('criarFeedback valid returns 201', async () => {
     Feedback.create = jest.fn().mockResolvedValue({ _id: '1', tipo: 'bug', avaliacao: 5, sugestao: '', data: new Date() });
-    const req = { body: { tipo: 'bug', avaliacao: 5 }, user: { _id: 'u1' } };
+    const req = { body: { tipo: 'bug', avaliacao: 5 }, user: { _id: '507f1f77bcf86cd799439011' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await feedbackController.criarFeedback(req, res);
     expect(res.status).toHaveBeenCalledWith(201);
@@ -326,7 +331,7 @@ describe('secaoController coverage', () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
   it('criarSecao returns 400 missing fields', async () => {
-    const req = { user: { _id: 'u1', tipoUsuario: 'ADMINISTRADOR' }, body: {} }; const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const req = { user: { _id: '507f1f77bcf86cd799439011', tipoUsuario: 'ADMINISTRADOR' }, body: {} }; const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await secaoController.criarSecao(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
@@ -388,20 +393,20 @@ describe('userController coverage', () => {
     expect(res.status).toHaveBeenCalledWith(201);
   });
   it('criarPerfil invalid returns 400', async () => {
-    const req = { user: { _id: 'u1' }, body: { username: '', personagem: '', fotoPerfil: '' } };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' }, body: { username: '', personagem: '', fotoPerfil: '' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await userController.criarPerfil(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
   it('buscarMeusDados not found returns 404', async () => {
     User.findById = jest.fn().mockReturnValue({ select: jest.fn().mockResolvedValue(null) });
-    const req = { user: { _id: 'u1' } };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await userController.buscarMeusDados(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
   it('atualizarTema invalid returns 400', async () => {
-    const req = { user: { _id: 'u1' }, body: { tema: 'invalid' } };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' }, body: { tema: 'invalid' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await userController.atualizarTema(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
@@ -436,51 +441,51 @@ describe('controllers extended coverage', () => {
     expect(res.status).toHaveBeenCalledWith(500);
   });
   it('faseController concluirFase invalid faseId returns 400', async () => {
-    const req = { user: { _id: 'u1' }, body: {} };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' }, body: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await faseController.concluirFase(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
   it('faseController atualizarFase not found returns 404', async () => {
     Fase.findById = jest.fn().mockResolvedValue(null);
-    const req = { user: { _id: 'u1', tipoUsuario: 'ADMINISTRADOR' }, params: { id: '507f1f77bcf86cd799439011' }, body: {} };
+    const req = { user: { _id: '507f1f77bcf86cd799439011', tipoUsuario: 'ADMINISTRADOR' }, params: { id: '507f1f77bcf86cd799439011' }, body: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await faseController.atualizarFase(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
   it('faseController deletarFase not found returns 404', async () => {
     Fase.findById = jest.fn().mockResolvedValue(null);
-    const req = { user: { _id: 'u1', tipoUsuario: 'ADMINISTRADOR' }, params: { id: '507f1f77bcf86cd799439011' } };
+    const req = { user: { _id: '507f1f77bcf86cd799439011', tipoUsuario: 'ADMINISTRADOR' }, params: { id: '507f1f77bcf86cd799439011' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await faseController.deletarFase(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
   it('progressoController salvarResultado invalid returns 400', async () => {
-    const req = { user: { _id: 'u1' }, body: {} };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' }, body: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await progressoController.salvarResultado(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
   it('progressoController salvarResposta invalid returns 400', async () => {
-    const req = { user: { _id: 'u1' }, body: {} };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' }, body: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await progressoController.salvarResposta(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
   it('trilhaController atualizarTrilha invalid id returns 400', async () => {
-    const req = { user: { _id: 'u1', tipoUsuario: 'ALUNO' }, params: { id: 'x' }, body: {} };
+    const req = { user: { _id: '507f1f77bcf86cd799439011', tipoUsuario: 'ALUNO' }, params: { id: 'x' }, body: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await trilhaController.atualizarTrilha(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
   it('trilhaController deletarTrilha invalid id returns 400', async () => {
-    const req = { user: { _id: 'u1', tipoUsuario: 'ALUNO' }, params: { id: 'x' } };
+    const req = { user: { _id: '507f1f77bcf86cd799439011', tipoUsuario: 'ALUNO' }, params: { id: 'x' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await trilhaController.deletarTrilha(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
   it('trilhaController iniciarTrilha invalid id returns 400', async () => {
-    const req = { user: { _id: 'u1' }, params: { trilhaId: 'x' } };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' }, params: { trilhaId: 'x' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await trilhaController.iniciarTrilha(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
@@ -504,21 +509,21 @@ describe('controllers extended coverage', () => {
   });
   it('perguntaController deletarPergunta returns 404 if fase missing', async () => {
     Fase.findById = jest.fn().mockResolvedValue(null);
-    const req = { user: { _id: 'u1', tipoUsuario: 'ADMINISTRADOR' }, params: { faseId: '507f1f77bcf86cd799439011', perguntaIndex: '0' } };
+    const req = { user: { _id: '507f1f77bcf86cd799439011', tipoUsuario: 'ADMINISTRADOR' }, params: { faseId: '507f1f77bcf86cd799439011', perguntaIndex: '0' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await perguntaController.deletarPergunta(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
   it('licaoSalvaController listarTrilhasSalvas returns list', async () => {
     LicaoSalva.find = jest.fn().mockReturnValue({ populate: jest.fn().mockReturnThis(), sort: jest.fn().mockResolvedValue([{ trilha: { titulo: 'x' } }]) });
-    const req = { user: { _id: 'u1' } };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' } };
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
     await licaoSalvaController.listarTrilhasSalvas(req, res);
     expect(res.json).toHaveBeenCalled();
   });
   it('licaoSalvaController verificarSeSalva returns false', async () => {
     LicaoSalva.findOne = jest.fn().mockResolvedValue(null);
-    const req = { user: { _id: 'u1' }, params: { trilhaId: '507f1f77bcf86cd799439011' } };
+    const req = { user: { _id: '507f1f77bcf86cd799439011' }, params: { trilhaId: '507f1f77bcf86cd799439011' } };
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
     await licaoSalvaController.verificarSeSalva(req, res);
     expect(res.json).toHaveBeenCalledWith({ salva: false });

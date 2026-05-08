@@ -1,338 +1,280 @@
 // @ts-nocheck
-import { describe, it, expect, beforeEach, jest, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import Materia from '../models/materia';
+import * as ragTrilhaContext from '../services/ragTrilhaContext';
 
+// Mock do Gemini SDK
+jest.mock('@google/generative-ai');
+
+// Mock do RAG
 jest.mock('../services/ragTrilhaContext', () => ({
-  buscarContextoRagTrilha: jest.fn().mockResolvedValue('Trecho RAG de teste'),
+  buscarContextoRagTrilha: jest.fn().mockResolvedValue('Contexto RAG Mock'),
 }));
+
+// Mock do Modelo Materia
+jest.mock('../models/materia');
 
 import { gerarSugestaoTrilhaViaServicoIa, gerarSugestaoTrilhaComGemini } from '../services/geminiTrilhaSugestaoService';
 
-const origFetch = global.fetch;
-
-afterEach(() => {
-  global.fetch = origFetch;
-  delete process.env.TRILHA_IA_API_URL;
-  delete process.env.TRILHA_IA_API_KEY;
-  delete process.env.TRILHA_IA_TIMEOUT_MS;
-});
-
-function mockFetch(impl: typeof global.fetch) {
-  global.fetch = impl as typeof global.fetch;
-}
-
 describe('gerarSugestaoTrilhaViaServicoIa', () => {
+  let mockGenerateContent: jest.Mock;
+  let mockGetGenerativeModel: jest.Mock;
+
   beforeEach(() => {
-    process.env.TRILHA_IA_API_URL = 'http://localhost:9999';
-    delete process.env.TRILHA_IA_API_KEY;
-  });
+    jest.clearAllMocks();
+    process.env.GEMINI_API_KEY = 'valid-key';
+    process.env.GEMINI_MODEL = 'gemini-pro';
 
-  it('rejeita matéria vazia', async () => {
-    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: '   ' })).rejects.toThrow('matéria é obrigatória');
-  });
-
-  it('monta URL completa quando base termina em /api/trilha/gerar', async () => {
-    process.env.TRILHA_IA_API_URL = 'http://ms/api/trilha/gerar';
-    let calledUrl = '';
-    mockFetch(
-      jest.fn().mockImplementation((url: string, init: RequestInit) => {
-        calledUrl = url;
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          statusText: 'OK',
-          text: async () =>
-            JSON.stringify({
-              modulos: [
-                {
-                  titulo: 'M1',
-                  descricao: 'D1',
-                  perguntas: [
-                    {
-                      enunciado: 'P1',
-                      alternativas: ['a'],
-                      indiceRespostaCorreta: NaN,
-                    },
-                  ],
-                },
-              ],
-            }),
-        });
-      })
-    );
-
-    const out = await gerarSugestaoTrilhaViaServicoIa({
-      materia: 'Matemática',
-      titulo: '  Título curso  ',
-      dificuldade: 'Medio',
-      temaOuObjetivo: ' frações ',
-      numeroSecoes: 1,
-      fasesPorSecao: 1,
-      perguntasPorFase: 2,
+    mockGenerateContent = jest.fn();
+    mockGetGenerativeModel = jest.fn().mockReturnValue({
+      generateContent: mockGenerateContent,
     });
 
-    expect(calledUrl).toBe('http://ms/api/trilha/gerar');
-    expect(out.trilha.materia).toBe('Matemática');
-    expect(out.trilha.dificuldade).toBe('Medio');
-    expect(out.secoes.length).toBeGreaterThan(0);
-    expect(out.secoes[0].fases[0].perguntas[0].enunciado).toBe('P1');
+    (GoogleGenerativeAI as jest.Mock).mockImplementation(() => ({
+      getGenerativeModel: mockGetGenerativeModel,
+    }));
+
+    // Mock padrão de matéria encontrada
+    Materia.findOne.mockResolvedValue({ nome: 'Matemática', ativo: true });
   });
 
-  it('agrupa duas fases na mesma seção quando fasesPorSecao é 2', async () => {
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        text: async () =>
-          JSON.stringify({
-            modulos: [
-              { titulo: 'F1', descricao: 'a', perguntas: [] },
-              { titulo: 'F2', descricao: 'b', perguntas: [] },
-            ],
-          }),
-      })
-    );
-
-    const out = await gerarSugestaoTrilhaViaServicoIa({
-      materia: 'Ciências',
-      numeroSecoes: 1,
-      fasesPorSecao: 2,
-    });
-    expect(out.secoes[0].fases.length).toBe(2);
-    expect(out.secoes[0].titulo).toBe('Seção 1');
+  it('deve lançar erro se a matéria estiver vazia', async () => {
+    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: '' })).rejects.toThrow('matéria é obrigatória');
   });
 
-  it('usa sufixo /trilha/gerar quando a base termina em /api', async () => {
-    process.env.TRILHA_IA_API_URL = 'http://ms/api';
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        text: async () =>
-          JSON.stringify({
-            modulos: [
-              { titulo: 'A', descricao: '', perguntas: [{ enunciado: 'Q', alternativas: ['1', '2', '3', '4'], indiceRespostaCorreta: 2 }] },
-              { titulo: 'B', descricao: 'bd', perguntas: [] },
-            ],
-          }),
-      })
-    );
-
-    const out = await gerarSugestaoTrilhaViaServicoIa({
-      materia: 'História',
-      dificuldade: 'Dificil',
-      numeroSecoes: 2,
-      fasesPorSecao: 1,
-    });
-    expect(global.fetch).toHaveBeenCalledWith(
-      'http://ms/api/trilha/gerar',
-      expect.objectContaining({
-        headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
-      })
-    );
-    expect(out.secoes.length).toBeGreaterThanOrEqual(1);
+  it('deve lançar erro se a matéria não estiver habilitada no banco', async () => {
+    Materia.findOne.mockResolvedValue(null);
+    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Inexistente' })).rejects.toThrow('Matéria não habilitada');
   });
 
-  it('envia Authorization quando TRILHA_IA_API_KEY está definida', async () => {
-    process.env.TRILHA_IA_API_KEY = 'secret-key';
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        text: async () => JSON.stringify({ modulos: [{ titulo: 'X', descricao: 'Y', perguntas: [] }] }),
-      })
-    );
-
-    await gerarSugestaoTrilhaViaServicoIa({ materia: 'Física' });
-    const [, init] = (global.fetch as jest.Mock).mock.calls[0];
-    expect(init.headers.Authorization).toBe('Bearer secret-key');
+  it('deve lançar erro se GEMINI_API_KEY não estiver configurada', async () => {
+    delete process.env.GEMINI_API_KEY;
+    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Matemática' })).rejects.toThrow('GEMINI_API_KEY não está configurada');
   });
 
-  it('aceita resposta no formato { trilha, secoes } e normaliza', async () => {
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        text: async () =>
-          JSON.stringify({
-            trilha: {
-              titulo: 'T',
-              descricao: 'D',
-              materia: 'Bio',
-              dificuldade: 'Facil',
-              faseSelecionada: 0,
-            },
-            secoes: [
-              {
-                ordem: 1,
-                titulo: 'S1',
-                descricao: 'sd',
-                fases: [
-                  {
-                    ordem: 1,
-                    titulo: 'F1',
-                    descricao: 'fd',
-                    conteudo: 'c',
-                    perguntas: [{ enunciado: 'e', alternativas: ['w', 'x'], respostaCorreta: 'z' }],
-                  },
-                ],
-              },
-            ],
-          }),
-      })
-    );
-
-    const out = await gerarSugestaoTrilhaViaServicoIa({ materia: 'Biologia' });
-    expect(out.trilha.titulo).toBe('T');
-    expect(out.secoes[0].fases[0].perguntas[0].respostaCorreta).toBe('w');
-  });
-
-  it('aceita resposta aninhada em data e sugestao', async () => {
-    const body = {
-      trilha: { titulo: 'T2', descricao: '', materia: 'm', dificuldade: 'Facil', faseSelecionada: 1 },
-      secoes: [],
+  it('deve gerar sugestão com sucesso (formato IntegraTrilha)', async () => {
+    const mockResponse = {
+      descricaoTrilha: 'Uma trilha de teste',
+      modulos: [
+        {
+          titulo: 'Módulo 1',
+          descricao: 'Desc 1',
+          perguntas: [
+            {
+              enunciado: 'Quanto é 1+1?',
+              alternativas: ['1', '2', '3', '4'],
+              indiceRespostaCorreta: 1
+            }
+          ]
+        }
+      ]
     };
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        text: async () => JSON.stringify({ data: { sugestao: body } }),
-      })
-    );
 
-    const out = await gerarSugestaoTrilhaViaServicoIa({ materia: 'Química' });
-    expect(out.trilha.titulo).toBe('T2');
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () => JSON.stringify(mockResponse)
+      }
+    });
+
+    const resultado = await gerarSugestaoTrilhaViaServicoIa({ materia: 'Matemática' });
+
+    expect(resultado.trilha.titulo).toContain('Módulo 1');
+    expect(resultado.trilha.materia).toBe('Matemática');
+    expect(resultado.secoes.length).toBe(1);
+    expect(resultado.secoes[0].fases[0].perguntas[0].respostaCorreta).toBe('1');
   });
 
-  it('lança quando o corpo não é JSON', async () => {
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        text: async () => 'not-json{',
-      })
-    );
-    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Arte' })).rejects.toThrow('não-JSON');
+  it('deve lidar com JSON envolto em blocos de código markdown', async () => {
+    const mockResponse = {
+      descricaoTrilha: 'Teste Markdown',
+      modulos: []
+    };
+
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () => `\`\`\`json\n${JSON.stringify(mockResponse)}\n\`\`\``
+      }
+    });
+
+    const resultado = await gerarSugestaoTrilhaViaServicoIa({ materia: 'Matemática' });
+    expect(resultado.trilha.descricao).toBe('Teste Markdown');
   });
 
-  it('lança em HTTP de erro com campo message', async () => {
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: false,
-        status: 422,
-        statusText: 'Unprocessable',
-        text: async () => JSON.stringify({ message: 'falhou' }),
-      })
-    );
-    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Música' })).rejects.toThrow(/HTTP 422|falhou/);
+  it('deve extrair JSON de texto sujo (quando há texto antes/depois do JSON)', async () => {
+     mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () => `Aqui está o seu JSON: {"descricaoTrilha": "Sujo", "modulos": []} Espero que goste!`
+      }
+    });
+
+    const resultado = await gerarSugestaoTrilhaViaServicoIa({ materia: 'Matemática' });
+    expect(resultado.trilha.descricao).toBe('Sujo');
   });
 
-  it('lança em HTTP de erro com campo erro', async () => {
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        statusText: 'Bad',
-        text: async () => JSON.stringify({ erro: 'bad req' }),
-      })
-    );
-    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Geo' })).rejects.toThrow('bad req');
+  it('deve lançar erro se a LLM não retornar um JSON válido', async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () => 'Texto puro sem JSON'
+      }
+    });
+
+    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Matemática' })).rejects.toThrow('A LLM nao retornou um JSON valido');
   });
 
-  it('lança em HTTP de erro sem JSON útil', async () => {
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        statusText: 'SrvErr',
-        text: async () => 'plain',
-      })
-    );
-    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Filosofia' })).rejects.toThrow('HTTP 500');
+  it('deve aceitar resposta no formato legado { trilha, secoes }', async () => {
+    const mockResponse = {
+      trilha: {
+        titulo: 'Legado',
+        descricao: 'D',
+        materia: 'M',
+        dificuldade: 'Facil',
+        faseSelecionada: 1
+      },
+      secoes: [
+        {
+          ordem: 1,
+          titulo: 'S1',
+          descricao: 'D1',
+          fases: []
+        }
+      ]
+    };
+
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () => JSON.stringify(mockResponse)
+      }
+    });
+
+    const resultado = await gerarSugestaoTrilhaViaServicoIa({ materia: 'Matemática' });
+    expect(resultado.trilha.titulo).toBe('Legado');
+    expect(resultado.secoes[0].titulo).toBe('S1');
   });
 
-  it('lança em falha de rede', async () => {
-    mockFetch(jest.fn().mockRejectedValue(new Error('ECONNREFUSED')));
-    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Português' })).rejects.toThrow('Falha de rede');
+  it('deve aceitar resposta aninhada em data ou sugestao', async () => {
+    const mockResponse = {
+      data: {
+        sugestao: {
+          trilha: { titulo: 'Aninhado', descricao: '', materia: 'M', dificuldade: 'Facil', faseSelecionada: 1 },
+          secoes: []
+        }
+      }
+    };
+
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () => JSON.stringify(mockResponse)
+      }
+    });
+
+    const resultado = await gerarSugestaoTrilhaViaServicoIa({ materia: 'Matemática' });
+    expect(resultado.trilha.titulo).toBe('Aninhado');
   });
 
-  it('lança em timeout (AbortError)', async () => {
-    process.env.TRILHA_IA_TIMEOUT_MS = '10000';
-    const abortErr = new Error('aborted');
-    abortErr.name = 'AbortError';
-    mockFetch(jest.fn().mockRejectedValue(abortErr));
-    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Inglês' })).rejects.toThrow('Timeout ao chamar');
+  it('deve lançar erro se o formato for irreconhecível', async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () => JSON.stringify({ algo: 'errado' })
+      }
+    });
+
+    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Matemática' })).rejects.toThrow('Formato de resposta do serviço de IA não reconhecido');
   });
 
-  it('dispara o timer interno (setTimeout) e aborta o fetch pendente', async () => {
-    jest.useFakeTimers();
-    try {
-      process.env.TRILHA_IA_API_URL = 'http://localhost:9999';
-      process.env.TRILHA_IA_TIMEOUT_MS = '10000';
-      mockFetch(
-        jest.fn().mockImplementation((_url, init) => {
-          return new Promise((_resolve, reject) => {
-            init?.signal?.addEventListener('abort', () => {
-              const err = new Error('Aborted');
-              err.name = 'AbortError';
-              reject(err);
-            });
-          });
-        })
-      );
-      const p = gerarSugestaoTrilhaViaServicoIa({ materia: 'Química' });
-      const assertion = expect(p).rejects.toThrow(/Timeout ao chamar serviço de IA/);
-      await jest.advanceTimersByTimeAsync(10001);
-      await assertion;
-    } finally {
-      jest.useRealTimers();
-    }
+  it('deve lançar erro se a chamada ao Gemini falhar', async () => {
+    mockGenerateContent.mockRejectedValue(new Error('API Down'));
+    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Matemática' })).rejects.toThrow('Falha ao chamar a IA: API Down');
   });
 
-  it('lança quando trilha/secoes estão incompletos após extração', async () => {
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        text: async () => JSON.stringify({ trilha: null, secoes: [] }),
-      })
-    );
-    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'X' })).rejects.toThrow('incompleta');
+  it('gerarSugestaoTrilhaComGemini deve ser um alias para gerarSugestaoTrilhaViaServicoIa', () => {
+    expect(gerarSugestaoTrilhaComGemini).toBe(gerarSugestaoTrilhaViaServicoIa);
   });
 
-  it('lança quando formato da resposta não é reconhecido', async () => {
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        text: async () => JSON.stringify({ foo: 1 }),
-      })
-    );
-    await expect(gerarSugestaoTrilhaViaServicoIa({ materia: 'Educação Física' })).rejects.toThrow('não reconhecido');
+  it('deve normalizar alternativas e resposta correta (correção de índice/texto)', async () => {
+    const mockResponse = {
+      descricaoTrilha: 'Normalização',
+      modulos: [
+        {
+          titulo: 'M1',
+          descricao: 'D1',
+          perguntas: [
+            {
+              enunciado: 'P1',
+              alternativas: [' A ', ' B ', ' C '], // menos de 4
+              indiceRespostaCorreta: 2
+            }
+          ]
+        }
+      ]
+    };
+
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () => JSON.stringify(mockResponse)
+      }
+    });
+
+    const resultado = await gerarSugestaoTrilhaViaServicoIa({ materia: 'Matemática' });
+    const p = resultado.secoes[0].fases[0].perguntas[0];
+    expect(p.alternativas.length).toBe(4);
+    expect(p.alternativas[0]).toBe('A');
+    expect(p.respostaCorreta).toBe('2');
   });
 
-  it('gerarSugestaoTrilhaComGemini aponta para a mesma implementação', async () => {
-    mockFetch(
-      jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        text: async () =>
-          JSON.stringify({
-            modulos: [{ titulo: 'Dep', descricao: '', perguntas: [{ enunciado: 'q', alternativas: ['a', 'b', 'c', 'd'] }] }],
-          }),
-      })
-    );
-    const a = await gerarSugestaoTrilhaViaServicoIa({ materia: 'X' });
-    const b = await gerarSugestaoTrilhaComGemini({ materia: 'X' });
-    expect(typeof a.trilha.titulo).toBe('string');
-    expect(typeof b.trilha.titulo).toBe('string');
+  it('deve lidar com dificuldades Medio e Dificil e normalizar respostas em formato A, B, C, D', async () => {
+    Materia.findOne.mockReturnValue({
+      select: jest.fn().mockResolvedValue({ _id: 'm1', nome: 'Mat' })
+    });
+
+    const mockResponse = {
+      modulos: [
+        {
+          titulo: 'M1',
+          descricao: 'D1',
+          perguntas: [
+            { enunciado: 'Q1', alternativas: ['A1', 'B1'], indiceRespostaCorreta: 'B' },
+            { enunciado: 'Q2', alternativas: ['A2', 'B2'], indiceRespostaCorreta: '2' }
+          ]
+        }
+      ]
+    };
+
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => JSON.stringify(mockResponse) }
+    });
+
+    const resultMedio = await gerarSugestaoTrilhaViaServicoIa({
+      materia: 'Mat',
+      dificuldade: 'Medio'
+    });
+    expect(resultMedio.trilha.dificuldade).toBe('Medio');
+    expect(resultMedio.secoes[0].fases[0].perguntas[0].respostaCorreta).toBe('1'); // B -> 1
+    expect(resultMedio.secoes[0].fases[0].perguntas[1].respostaCorreta).toBe('2'); // 2 -> 2
+
+    const resultDificil = await gerarSugestaoTrilhaViaServicoIa({
+      materia: 'Mat',
+      dificuldade: 'Dificil'
+    });
+    expect(resultDificil.trilha.dificuldade).toBe('Dificil');
+  });
+
+  it('deve tratar erro na normalização de sugestão individualmente', async () => {
+      Materia.findOne.mockReturnValue({
+          select: jest.fn().mockResolvedValue({ _id: 'm1', nome: 'Mat' })
+      });
+      // Um módulo sem título para causar erro na normalização se houver validação ou apenas para testar o catch
+      const mockResponse = {
+          modulos: [
+              null, // Isso deve causar erro ao tentar acessar modulos[0].titulo
+              { titulo: 'M2', descricao: 'D2', perguntas: [] }
+          ]
+      };
+      mockGenerateContent.mockResolvedValue({
+          response: { text: () => JSON.stringify(mockResponse) }
+      });
+
+      const result = await gerarSugestaoTrilhaViaServicoIa({ materia: 'Mat' });
+      expect(result.secoes.length).toBe(1); // M2 deve ter passado, null deve ter falhado
   });
 });
