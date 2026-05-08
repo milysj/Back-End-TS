@@ -73,12 +73,36 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
         });
 
+        const userData = {
+            id: String(usuario._id),
+            nome: usuario.nome,
+            email: usuario.email,
+            username: usuario.username,
+            personagem: usuario.personagem,
+            fotoPerfil: usuario.fotoPerfil,
+            xpTotal: usuario.xpTotal,
+            tema: usuario.tema,
+            idioma: usuario.idioma,
+            isVerified: usuario.isVerified,
+            twoFactorEnabled: usuario.twoFactorEnabled,
+        };
+
+        res.cookie('user_data', JSON.stringify(userData), {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
         void appLogger.info("auth.login.success", { userId: String(usuario._id) });
         return res.json({ 
             success: true,
             token,
             perfilCriado: !!usuario.personagem, 
-            usuario: { id: usuario._id, nome: usuario.nome } 
+            usuario: {
+                ...userData,
+                tipoUsuario: usuario.tipoUsuario
+            } 
         });
     } catch (error) {
         const err = error as Error;

@@ -32,6 +32,9 @@ import Progresso from '../models/progresso';
 import Score from '../models/score';
 import User from '../models/user';
 import * as twoFactorPendingToken from '../utils/twoFactorPendingToken';
+import Materia from '../models/materia';
+import * as materiaController from '../controllers/materiaController';
+import { seedMaterias } from '../utils/seedMaterias';
 
 const oid = '507f1f77bcf86cd799439011';
 
@@ -2224,6 +2227,28 @@ describe('controllers ~90% — progresso e ranking', () => {
     const req = { headers: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await rankingController.obterRankingNivel(req, res);
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+});
+
+describe('materiaController & Seed', () => {
+  it('getMaterias retorna lista de nomes', async () => {
+    Materia.find = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue([{ nome: 'Português' }])
+    });
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+    await materiaController.getMaterias({}, res);
+    expect(res.json).toHaveBeenCalledWith(['Português']);
+  });
+
+  it('getMaterias trata erro', async () => {
+    Materia.find = jest.fn().mockReturnValue({
+        select: jest.fn().mockImplementation(() => { throw new Error('fail'); })
+    });
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await materiaController.getMaterias({}, res);
     expect(res.status).toHaveBeenCalledWith(500);
   });
 });

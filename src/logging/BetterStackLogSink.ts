@@ -73,12 +73,11 @@ export class BetterStackLogSink {
     for (const [k, v] of Object.entries(ctx)) {
       if (k === 'headers' && v && typeof v === 'object') {
         out[k] = sanitizeHeaders(v as Record<string, unknown>);
-      } else if (k === 'body' || k === 'query' || k === 'params') {
-        out[k] = sanitizeBody(v);
       } else if (v instanceof Error) {
         out[k] = { name: v.name, message: v.message, stack: v.stack };
-      } else if (v && typeof v === 'object' && !Array.isArray(v)) {
-        out[k] = this.deepSanitizeContext(v as LogContext);
+      } else if (v && typeof v === 'object') {
+        // Usa sanitizeBody para tratar recursão e chaves sensíveis (senha, token, etc)
+        out[k] = sanitizeBody(v);
       } else {
         out[k] = v;
       }

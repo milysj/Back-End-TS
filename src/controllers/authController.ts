@@ -51,13 +51,33 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    const userData = {
+      id: String(user._id),
+      nome: user.nome,
+      email: user.email,
+      username: user.username,
+      personagem: user.personagem,
+      fotoPerfil: user.fotoPerfil,
+      xpTotal: user.xpTotal,
+      tema: user.tema,
+      idioma: user.idioma,
+      isVerified: user.isVerified,
+      twoFactorEnabled: user.twoFactorEnabled,
+    };
+
+    // Cookie para o frontend ler dados básicos sem precisar de fetch /me
+    res.cookie('user_data', JSON.stringify(userData), {
+      httpOnly: false, // Precisa ser acessível pelo JS do frontend
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     void appLogger.info('auth.legacy_login.success', { userId: String(user._id) });
     return res.json({
       token,
-      user: {
-        id: user._id,
-        nome: user.nome,
-        email: user.email,
+      usuario: {
+        ...userData,
         tipoUsuario: user.tipoUsuario,
       },
     });

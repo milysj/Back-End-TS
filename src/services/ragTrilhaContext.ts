@@ -66,7 +66,7 @@ export async function buscarContextoRagTrilha(
       .lean();
 
     const header = [`Trilha de referência: "${t.titulo}"`, `Matéria: ${t.materia}`, `Dificuldade: ${t.dificuldade}`];
-    if (t.descricao) header.push(`Descrição: ${t.descricao}`);
+    if (t.descricao) header.push(`Descrição: ${String(t.descricao).slice(0, 1000)}${String(t.descricao).length > 1000 ? "..." : ""}`);
 
     const fasesTxt = fases.map(formatarFaseResumo).filter(Boolean);
     blocos.push([...header, ...fasesTxt].join("\n"));

@@ -184,7 +184,8 @@ function isIntegraTrilhaShape(json: unknown): json is IntegraTrilhaApiResponse {
   return Array.isArray(o.modulos);
 }
 
-function normalizarSugestao(raw: TrilhaSugestaoResposta): TrilhaSugestaoResposta {
+/** Exportado para testes */
+export function normalizarSugestao(raw: TrilhaSugestaoResposta): TrilhaSugestaoResposta {
   if (!raw?.trilha || !Array.isArray(raw.secoes)) {
     throw new Error("Resposta do serviço de IA incompleta (trilha ou seções ausentes).");
   }
