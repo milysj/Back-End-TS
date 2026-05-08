@@ -24,6 +24,7 @@ import rankingRoutes from './routes/rankingRoutes';
 import secoesRoutes from './routes/secoesRoutes';
 import trilhaRoutes from './routes/trilhaRoutes';
 import scoreRoutes from './routes/scoreRoutes';
+import materiaRoutes from './routes/materiaRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -53,6 +54,7 @@ app.use('/api/ranking', rankingRoutes);
 app.use('/api/secoes', secoesRoutes);
 app.use('/api/trilhas', trilhaRoutes);
 app.use('/api/score', scoreRoutes);
+app.use('/api/materias', materiaRoutes);
 
 // Rota raiz para verificar se o servidor está online
 app.get('/', (req, res) => {
@@ -61,11 +63,15 @@ app.get('/', (req, res) => {
 
 app.use(errorHandler);
 
+import { seedMaterias } from './utils/seedMaterias';
+
 // --- Inicialização do Servidor ---
 if (process.env.NODE_ENV !== 'test') {
     registerUnhandledProcessHandlers();
     // Conecta ao banco de dados apenas quando o servidor real é iniciado 
-    connectDB();
+    connectDB().then(() => {
+        seedMaterias();
+    });
 
     app.listen(PORT, () => {
         void appLogger.info('server.started', {

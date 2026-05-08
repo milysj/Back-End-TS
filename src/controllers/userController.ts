@@ -207,7 +207,8 @@ export const criarPerfil = async (req: AuthRequest, res: Response): Promise<Resp
 
 export const buscarMeusDados = async (req: AuthRequest, res: Response): Promise<Response> => {
     try {
-        const usuario = await User.findById(req.user!._id).select("-senha");
+        const camposPerfil = "nome email username tipoUsuario personagem fotoPerfil tema idioma xpTotal";
+        const usuario = await User.findById(req.user!._id).select(camposPerfil);
         if (!usuario) return res.status(404).json({ message: "Usuário não encontrado" });
         return res.json(usuario);
     } catch (error) {

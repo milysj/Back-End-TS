@@ -1,4 +1,5 @@
 import { buscarContextoRagTrilha } from "./ragTrilhaContext";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export type DificuldadeTrilha = "Facil" | "Medio" | "Dificil";
 
@@ -88,20 +89,35 @@ function dificuldadeParaNivel(
   return "avancado";
 }
 
-function perguntaIntegraParaSugestao(p: {
-  enunciado: string;
-  alternativas: string[];
-  indiceRespostaCorreta?: number;
-}): PerguntaSugestao {
-  const alts = [...(p.alternativas || [])].map((a) => String(a).trim()).filter(Boolean);
-  while (alts.length < 4) alts.push("");
+function perguntaIntegraParaSugestao(p: any): PerguntaSugestao {
+  const alts = [...(p.alternativas || p.opcoes || [])].map((a) => String(a).trim()).filter(Boolean);
+  while (alts.length < 4) alts.push(`Alternativa ${alts.length + 1}`);
   const slice = alts.slice(0, 4);
-  let idx = Number(p.indiceRespostaCorreta);
-  if (!Number.isFinite(idx)) idx = 0;
-  idx = Math.min(3, Math.max(0, Math.floor(idx)));
+
+  let idx = 0;
+  
+  if (p.indiceRespostaCorreta !== undefined && p.indiceRespostaCorreta !== null) {
+      const val = String(p.indiceRespostaCorreta).trim().toUpperCase();
+      if (val === 'A') idx = 0;
+      else if (val === 'B') idx = 1;
+      else if (val === 'C') idx = 2;
+      else if (val === 'D') idx = 3;
+      else {
+          const num = Number(val);
+          if (Number.isFinite(num)) {
+             idx = Math.min(3, Math.max(0, Math.floor(num)));
+          }
+      }
+  } else if (p.respostaCorreta || p.resposta_correta) {
+      const txtCorreta = String(p.respostaCorreta || p.resposta_correta).trim();
+      const findIdx = slice.findIndex(alt => alt === txtCorreta);
+      if (findIdx >= 0) idx = findIdx;
+  }
+
   let correta = slice[idx] || "";
   if (!correta && slice[0]) correta = slice[0];
-  return { enunciado: String(p.enunciado || "").trim(), alternativas: slice, respostaCorreta: correta };
+  
+  return { enunciado: String(p.enunciado || p.pergunta || "").trim(), alternativas: slice, respostaCorreta: correta };
 }
 
 /**
@@ -217,6 +233,8 @@ function extrairCorpoSugestao(json: unknown): TrilhaSugestaoResposta {
   throw new Error("Formato de resposta do serviço de IA não reconhecido (esperado { trilha, secoes }).");
 }
 
+import Materia from "../models/materia";
+
 /**
  * Encaminha a geração ao microsserviço de LLM (URL em TRILHA_IA_API_URL).
  * Opcional: TRILHA_IA_API_KEY como Bearer; TRILHA_IA_TIMEOUT_MS (padrão 120000).
@@ -224,6 +242,15 @@ function extrairCorpoSugestao(json: unknown): TrilhaSugestaoResposta {
 export async function gerarSugestaoTrilhaViaServicoIa(input: GerarSugestaoTrilhaInput): Promise<TrilhaSugestaoResposta> {
   const materia = input.materia.trim();
   if (!materia) throw new Error("matéria é obrigatória.");
+
+  // Validar matéria contra o banco de dados
+  const materiaExiste = await Materia.findOne({ 
+    nome: new RegExp(`^${materia}$`, "i"),
+    ativo: true 
+  });
+  if (!materiaExiste) {
+    throw new Error("Matéria não habilitada. Por favor, entre em contato com o suporte para solicitar a adição deste tema.");
+  }
 
   const numeroSecoes = Math.min(8, Math.max(1, input.numeroSecoes ?? 2));
   const fasesPorSecao = Math.min(6, Math.max(1, input.fasesPorSecao ?? 1));
@@ -250,53 +277,84 @@ export async function gerarSugestaoTrilhaViaServicoIa(input: GerarSugestaoTrilha
     perguntasPorModulo: perguntasPorFase,
   };
 
-  const postUrl = resolveTrilhaIaPostUrl();
-  const timeoutMs = Math.min(300_000, Math.max(10_000, Number(process.env.TRILHA_IA_TIMEOUT_MS) || 120_000));
-  const apiKey = process.env.TRILHA_IA_API_KEY?.trim();
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
-  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  let res: Response;
-  try {
-    res = await fetch(postUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(bodyIntegra),
-      signal: controller.signal,
-    });
-  } catch (e) {
-    const err = e as Error;
-    if (err.name === "AbortError") throw new Error(`Timeout ao chamar serviço de IA (${timeoutMs} ms).`);
-    throw new Error(`Falha de rede ao chamar serviço de IA: ${err.message}`);
-  } finally {
-    clearTimeout(timer);
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY não está configurada no .env");
   }
 
-  const text = await res.text();
+  const ai = new GoogleGenerativeAI(apiKey);
+  const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+
+  const model = ai.getGenerativeModel({
+    model: GEMINI_MODEL,
+    generationConfig: { responseMimeType: "application/json" },
+  });
+
+  const prompt = `
+Voce e um designer instrucional para uma plataforma educacional.
+Crie uma trilha de aprendizagem em portugues do Brasil.
+
+Dados:
+- Titulo sugerido: ${bodyIntegra.titulo || "nao informado"}
+- Tema: ${bodyIntegra.tema}
+- Nivel: ${bodyIntegra.nivel}
+- Quantidade de modulos: ${bodyIntegra.numeroModulos}
+- Perguntas por modulo: ${bodyIntegra.perguntasPorModulo}
+- Contexto adicional/RAG: ${bodyIntegra.contextoAdicional || "nao informado"}
+
+Responda somente JSON valido neste formato exato:
+{
+  "descricaoTrilha": "descricao curta da trilha",
+  "modulos": [
+    {
+      "titulo": "titulo do modulo",
+      "descricao": "explicacao educativa do conteudo do modulo",
+      "perguntas": [
+        {
+          "enunciado": "pergunta objetiva de multipla escolha",
+          "alternativas": ["alternativa A", "alternativa B", "alternativa C", "alternativa D"],
+          "indiceRespostaCorreta": 0
+        }
+      ]
+    }
+  ]
+}
+
+Regras:
+- Gere exatamente ${bodyIntegra.numeroModulos} modulos.
+- Gere exatamente ${bodyIntegra.perguntasPorModulo} perguntas por modulo.
+- "indiceRespostaCorreta" DEVE ser um número inteiro de 0 a 3 (0=A, 1=B, 2=C, 3=D). NUNCA use letras.
+- CRÍTICO: Todas as 4 alternativas de uma pergunta DEVEM ter um tamanho semelhante (quantidade de caracteres parecida, margem de 5 a 10 caracteres de diferença no máximo). Nunca faça a resposta correta ser visivelmente mais longa ou mais detalhada que as erradas. As alternativas incorretas devem ser plausíveis e ter a mesma riqueza de detalhes da correta.
+- Nao use markdown, comentarios ou texto fora do JSON.
+`;
+
   let json: unknown;
   try {
-    json = text ? JSON.parse(text) : null;
-  } catch {
-    throw new Error(`Serviço de IA retornou corpo não-JSON (HTTP ${res.status}).`);
-  }
-
-  if (!res.ok) {
-    const msg =
-      json && typeof json === "object" && "message" in json
-        ? String((json as { message: unknown }).message)
-        : json && typeof json === "object" && "erro" in json
-          ? String((json as { erro: unknown }).erro)
-          : json && typeof json === "object" && "error" in json
-            ? String((json as { error: unknown }).error)
-          : text?.slice(0, 500) || res.statusText;
-    throw new Error(`Serviço de IA HTTP ${res.status}: ${msg}`);
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Extração segura do JSON
+    const limpo = text
+      .trim()
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/```$/i, "")
+      .trim();
+      
+    try {
+      json = JSON.parse(limpo);
+    } catch {
+      const inicio = limpo.indexOf("{");
+      const fim = limpo.lastIndexOf("}");
+      if (inicio >= 0 && fim > inicio) {
+        json = JSON.parse(limpo.slice(inicio, fim + 1));
+      } else {
+        throw new Error("A LLM nao retornou um JSON valido.");
+      }
+    }
+  } catch (e: any) {
+    throw new Error(`Falha ao chamar a IA: ${e.message}`);
   }
 
   if (isIntegraTrilhaShape(json)) {
