@@ -7,7 +7,7 @@ export interface IUser extends Document {
   email: string;
   senha: string;
   dataNascimento: Date;
-  tipoUsuario: "ALUNO" | "PROFESSOR" | "ADMINISTRADOR";
+  tipoUsuario: "ALUNO" | "PROFESSOR" | "ADMINISTRADOR" | "OWNER";
   username: string;
   personagem: "" | "Guerreiro" | "Mago" | "Samurai";
   fotoPerfil: string;
@@ -32,6 +32,9 @@ export interface IUser extends Document {
   twoFactorFailedAttempts: number;
   /** Bloqueio temporário após excesso de falhas (UTC). */
   twoFactorLockUntil?: Date;
+  status: "ATIVO" | "BLOQUEADO" | "BANIDO";
+  bloqueadoAte?: Date | null;
+  canPromoteToAdmin: boolean;
 }
 
 
@@ -48,7 +51,7 @@ const UserSchema: Schema = new mongoose.Schema(
     dataNascimento: { type: Date, required: true },
     tipoUsuario: {
       type: String,
-      enum: ["ALUNO", "PROFESSOR", "ADMINISTRADOR"],
+      enum: ["ALUNO", "PROFESSOR", "ADMINISTRADOR", "OWNER"],
       required: true,
     },
     username: { 
@@ -102,7 +105,13 @@ const UserSchema: Schema = new mongoose.Schema(
     twoFactorBackupCodes: { type: [String], default: [], select: false },
     twoFactorFailedAttempts: { type: Number, default: 0 },
     twoFactorLockUntil: { type: Date, default: null },
-
+    status: {
+      type: String,
+      enum: ["ATIVO", "BLOQUEADO", "BANIDO"],
+      default: "ATIVO",
+    },
+    bloqueadoAte: { type: Date, default: null },
+    canPromoteToAdmin: { type: Boolean, default: false },
   },
   { timestamps: true }
   

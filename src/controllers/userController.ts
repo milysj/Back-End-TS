@@ -37,6 +37,30 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
         const senhaValida = await bcrypt.compare(senha, usuario.senha!);
         if (!senhaValida) return res.status(401).json({ message: "Credenciais inválidas." });
 
+        // Checar status da conta
+        if (usuario.status === "BANIDO") {
+            return res.status(403).json({ message: "Esta conta foi banida do sistema." });
+        }
+
+        if (usuario.status === "BLOQUEADO") {
+            if (usuario.bloqueadoAte && new Date() > usuario.bloqueadoAte) {
+                usuario.status = "ATIVO";
+                usuario.bloqueadoAte = null;
+                await usuario.save();
+            } else {
+                let msgBloqueio = "Esta conta está temporariamente bloqueada.";
+                if (usuario.bloqueadoAte) {
+                    const dataFormatada = new Date(usuario.bloqueadoAte).toLocaleString("pt-BR", {
+                        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+                    });
+                    msgBloqueio = `Esta conta está bloqueada até ${dataFormatada}.`;
+                } else {
+                    msgBloqueio = "Esta conta está bloqueada por tempo indeterminado.";
+                }
+                return res.status(403).json({ message: msgBloqueio });
+            }
+        }
+
         const secret = process.env.JWT_SECRET;
         if (!secret) {
             console.error("Erro fatal: JWT_SECRET não está definido.");

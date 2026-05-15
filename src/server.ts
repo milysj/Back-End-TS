@@ -25,6 +25,7 @@ import secoesRoutes from './routes/secoesRoutes';
 import trilhaRoutes from './routes/trilhaRoutes';
 import scoreRoutes from './routes/scoreRoutes';
 import materiaRoutes from './routes/materiaRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -55,6 +56,7 @@ app.use('/api/secoes', secoesRoutes);
 app.use('/api/trilhas', trilhaRoutes);
 app.use('/api/score', scoreRoutes);
 app.use('/api/materias', materiaRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Rota raiz para verificar se o servidor está online
 app.get('/', (req, res) => {
