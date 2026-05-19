@@ -1,0 +1,298 @@
+openapi: 3.0.0
+info:
+  title: EstudeMy API - Trilhas
+  version: 1.0.0
+paths:
+  /api/trilhas:
+    get:
+      tags:
+        - Trilhas
+      summary: Listar todas as trilhas
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de trilhas
+        '401':
+          description: Não autorizado (Token ausente ou inválido)
+        '500':
+          description: Erro interno do servidor
+    post:
+      tags:
+        - Trilhas
+      summary: Criar nova trilha (Apenas Professores/Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titulo, descricao, materia, faseSelecionada]
+              properties:
+                titulo:
+                  type: string
+                  example: "Trilha de Matemática Básica"
+                descricao:
+                  type: string
+                  example: "Aprenda os fundamentos da matemática de forma divertida."
+                materia:
+                  type: string
+                  example: "Matemática"
+                faseSelecionada:
+                  type: integer
+                  example: 1
+                dificuldade:
+                  type: string
+                  enum: ["Facil", "Medio", "Dificil"]
+                  example: "Facil"
+                disponibilidade:
+                  type: string
+                  enum: ["Privado", "Aberto"]
+                  example: "Privado"
+                pagamento:
+                  type: string
+                  enum: ["Paga", "Gratuita"]
+                  example: "Gratuita"
+                imagem:
+                  type: string
+                  example: "/img/fases/vila.jpg"
+      responses:
+        '201':
+          description: Trilha criada
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado (Token ausente ou inválido)
+        '403':
+          description: Proibido (Apenas Professores podem realizar esta ação)
+        '500':
+          description: Erro interno do servidor
+  /api/trilhas/gerar-com-ia:
+    post:
+      tags:
+        - Trilhas
+      summary: Gerar trilha com Inteligência Artificial (Apenas Professores/Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                  example: "Crie uma trilha sobre a história do Brasil colonial."
+      responses:
+        '200':
+          description: Trilha gerada
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado (Token ausente ou inválido)
+        '403':
+          description: Proibido (Apenas Professores podem realizar esta ação)
+        '500':
+          description: Erro interno do servidor
+  /api/trilhas/novidades:
+    get:
+      tags:
+        - Trilhas
+      summary: Listar trilhas mais recentes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de trilhas
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno do servidor
+  /api/trilhas/populares:
+    get:
+      tags:
+        - Trilhas
+      summary: Listar trilhas mais populares
+      responses:
+        '200':
+          description: Lista de trilhas
+        '500':
+          description: Erro interno do servidor
+  /api/trilhas/continue:
+    get:
+      tags:
+        - Trilhas
+      summary: Listar trilhas em andamento do usuário
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de trilhas
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno do servidor
+  /api/trilhas/buscar:
+    get:
+      tags:
+        - Trilhas
+      summary: Buscar trilhas por nome ou termo
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+            example: "matemática"
+      responses:
+        '200':
+          description: Lista de trilhas encontradas
+        '500':
+          description: Erro interno do servidor
+  /api/trilhas/iniciar/{trilhaId}:
+    post:
+      tags:
+        - Trilhas
+      summary: Iniciar uma trilha
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: trilhaId
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0a1"
+      responses:
+        '200':
+          description: Trilha iniciada
+        '401':
+          description: Não autorizado
+        '404':
+          description: Trilha não encontrada
+        '500':
+          description: Erro interno do servidor
+  /api/trilhas/visualizar/{id}:
+    post:
+      tags:
+        - Trilhas
+      summary: Incrementar visualizações da trilha
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0a1"
+      responses:
+        '200':
+          description: Visualização computada
+        '404':
+          description: Trilha não encontrada
+        '500':
+          description: Erro interno do servidor
+  /api/trilhas/{id}:
+    get:
+      tags:
+        - Trilhas
+      summary: Buscar trilha por ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0a1"
+      responses:
+        '200':
+          description: Trilha encontrada
+        '404':
+          description: Trilha não encontrada
+        '500':
+          description: Erro interno do servidor
+    put:
+      tags:
+        - Trilhas
+      summary: Atualizar trilha (Apenas Professores/Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0a1"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titulo:
+                  type: string
+                  example: "Trilha de Matemática Avançada"
+                descricao:
+                  type: string
+                  example: "Aprenda conceitos matemáticos avançados."
+                materia:
+                  type: string
+                  example: "Matemática"
+                faseSelecionada:
+                  type: integer
+                  example: 2
+                dificuldade:
+                  type: string
+                  enum: ["Facil", "Medio", "Dificil"]
+                  example: "Medio"
+                disponibilidade:
+                  type: string
+                  enum: ["Privado", "Aberto"]
+                  example: "Aberto"
+                pagamento:
+                  type: string
+                  enum: ["Paga", "Gratuita"]
+                  example: "Gratuita"
+                imagem:
+                  type: string
+                  example: "/img/fases/vila.jpg"
+      responses:
+        '200':
+          description: Trilha atualizada
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '403':
+          description: Proibido (Apenas Professores podem realizar esta ação)
+        '404':
+          description: Trilha não encontrada
+        '500':
+          description: Erro interno do servidor
+    delete:
+      tags:
+        - Trilhas
+      summary: Deletar trilha (Apenas Professores/Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0a1"
+      responses:
+        '200':
+          description: Trilha deletada
+        '401':
+          description: Não autorizado
+        '403':
+          description: Proibido (Apenas Professores podem realizar esta ação)
+        '404':
+          description: Trilha não encontrada
+        '500':
+          description: Erro interno do servidor

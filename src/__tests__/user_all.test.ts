@@ -152,7 +152,7 @@ describe('User Domain - Unit & Integration Tests', () => {
 
         it('Deve registrar, confirmar e logar usuário', async () => {
             // Register
-            const resReg = await request(app).post('/api/users/register').send(testUser);
+            const resReg = await request(app).post('/api/auth/register').send(testUser);
             expect(resReg.statusCode).toEqual(201);
 
             const userInDb = await User.findOne({ email: testUser.email });
@@ -166,7 +166,7 @@ describe('User Domain - Unit & Integration Tests', () => {
             }
 
             // Login
-            const resLogin = await request(app).post('/api/users/login').send({
+            const resLogin = await request(app).post('/api/auth/login').send({
                 email: testUser.email,
                 senha: testUser.senha
             });
@@ -182,7 +182,7 @@ describe('User Domain - Unit & Integration Tests', () => {
                 fotoPerfil: "/img/guerreiro.png"
             };
             const resProf = await request(app)
-                .post('/api/users/criar-perfil')
+                .post('/api/auth/criarPerfil')
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(profileData);
             expect(resProf.statusCode).toEqual(200);
@@ -218,7 +218,7 @@ describe('User Domain - Unit & Integration Tests', () => {
 
             // Verify Token
             const resVerify = await request(app)
-                .get('/api/users/verify')
+                .get('/api/auth/verify')
                 .set('Authorization', `Bearer ${authToken}`);
             expect(resVerify.statusCode).toEqual(200);
         });

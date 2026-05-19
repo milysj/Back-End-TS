@@ -10,6 +10,7 @@ import { httpLogMiddleware } from './middlewares/httpLogMiddleware';
 import { errorHandler } from './middlewares/errorHandler';
 import { registerUnhandledProcessHandlers } from './middlewares/unhandledProcessHandlers';
 import { appLogger } from './logging/appLogger';
+import { setupSwagger } from './config/swagger';
 
 // --- Importação das Rotas ---
 import authRoutes from './routes/authRoutes';
@@ -25,6 +26,7 @@ import secoesRoutes from './routes/secoesRoutes';
 import trilhaRoutes from './routes/trilhaRoutes';
 import scoreRoutes from './routes/scoreRoutes';
 import materiaRoutes from './routes/materiaRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,6 +44,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(httpLogMiddleware);
 
 // --- Registro das Rotas ---
+setupSwagger(app);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/fases', faseRoutes);
@@ -55,6 +58,7 @@ app.use('/api/secoes', secoesRoutes);
 app.use('/api/trilhas', trilhaRoutes);
 app.use('/api/score', scoreRoutes);
 app.use('/api/materias', materiaRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Rota raiz para verificar se o servidor está online
 app.get('/', (req, res) => {

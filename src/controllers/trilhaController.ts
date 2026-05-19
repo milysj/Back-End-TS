@@ -28,9 +28,9 @@ export const listarTrilhas = async (req: AuthRequest, res: Response): Promise<Re
   try {
     const userId = req.user!._id;
     const tipoUsuario = req.user!.tipoUsuario;
-    const query = tipoUsuario === "ADMINISTRADOR" ? {} : { usuario: userId };
+    const query = (tipoUsuario === "ADMINISTRADOR" || tipoUsuario === "OWNER") ? {} : { usuario: userId };
     let trilhasQuery = Trilha.find(query).select("-usuariosIniciaram");
-    if (tipoUsuario === "ADMINISTRADOR") trilhasQuery = trilhasQuery.populate({ path: "usuario", select: "nome username email tipoUsuario" });
+    if (tipoUsuario === "ADMINISTRADOR" || tipoUsuario === "OWNER") trilhasQuery = trilhasQuery.populate({ path: "usuario", select: "nome username email tipoUsuario" });
     const trilhas = await trilhasQuery.sort({ createdAt: -1 });
     void appLogger.info("trilha.list.success", { count: trilhas.length, userId: String(userId) });
     return res.json(trilhas);
@@ -53,7 +53,7 @@ export const atualizarTrilha = async (req: AuthRequest, res: Response): Promise<
       const trilhaAtual = await Trilha.findById(id);
       dadosAtualizacao.imagem = trilhaAtual?.imagem || "/img/fases/vila.jpg";
     }
-    const query = tipoUsuario === "ADMINISTRADOR" ? { _id: id } : { _id: id, usuario: userId };
+    const query = (tipoUsuario === "ADMINISTRADOR" || tipoUsuario === "OWNER") ? { _id: id } : { _id: id, usuario: userId };
     const trilha = await Trilha.findOneAndUpdate(query, dadosAtualizacao, { new: true });
     if (!trilha) return res.status(404).json({ message: "Trilha não encontrada ou você não tem permissão para editar." });
     const trilhaResponse = trilha.toObject();
@@ -73,7 +73,7 @@ export const deletarTrilha = async (req: AuthRequest, res: Response): Promise<Re
     if (typeof id !== 'string' || !mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: "ID da trilha inválido" });
     }
-    const query = tipoUsuario === "ADMINISTRADOR" ? { _id: id } : { _id: id, usuario: userId };
+    const query = (tipoUsuario === "ADMINISTRADOR" || tipoUsuario === "OWNER") ? { _id: id } : { _id: id, usuario: userId };
     const trilha = await Trilha.findOneAndDelete(query);
     if (!trilha) return res.status(404).json({ message: "Trilha não encontrada ou você não tem permissão para deletar." });
     return res.json({ message: "Trilha excluída com sucesso" });
@@ -146,7 +146,7 @@ export const buscarTrilhas = async (req: AuthRequest, res: Response): Promise<Re
         if (q) conditions.$or = [ { titulo: { $regex: q, $options: "i" } }, { descricao: { $regex: q, $options: "i" } }, { materia: { $regex: q, $options: "i" } } ];
         if (materia && materia.trim() !== "" && materia !== "Todas") conditions.materia = { $regex: materia.trim(), $options: "i" };
         let trilhasQuery = Trilha.find(conditions).select("-usuariosIniciaram");
-        const populateSelect = tipoUsuario === "ADMINISTRADOR" ? "nome username email tipoUsuario" : "nome username";
+        const populateSelect = (tipoUsuario === "ADMINISTRADOR" || tipoUsuario === "OWNER") ? "nome username email tipoUsuario" : "nome username";
         trilhasQuery = trilhasQuery.populate({ path: "usuario", select: populateSelect });
         const trilhas = await trilhasQuery.sort({ visualizacoes: -1, createdAt: -1 });
         return res.json(trilhas);
@@ -163,7 +163,7 @@ export const buscarTrilhaPorId = async (req: AuthRequest, res: Response): Promis
             return res.status(400).json({ message: "ID da trilha inválido" });
         }
         const tipoUsuario = req.user?.tipoUsuario;
-        const populateSelect = tipoUsuario === "ADMINISTRADOR" ? "nome username email tipoUsuario" : "nome username";
+        const populateSelect = (tipoUsuario === "ADMINISTRADOR" || tipoUsuario === "OWNER") ? "nome username email tipoUsuario" : "nome username";
         const trilha = await Trilha.findById(id).select("-usuariosIniciaram").populate({ path: "usuario", select: populateSelect });
         if (!trilha) return res.status(404).json({ message: "Trilha não encontrada" });
         return res.json(trilha);

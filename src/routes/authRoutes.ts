@@ -7,6 +7,7 @@ import {
     confirmarEmail,
 } from "../controllers/userController";
 import { verificarToken } from "../middlewares/authMiddleware";
+import { loginRateLimiter, registerRateLimiter } from "../middlewares/authRateLimit";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -30,8 +31,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // --- Rotas de Autenticação ---
-router.post("/login", loginUser);
-router.post("/register", registerUser);
+router.post("/login", loginRateLimiter, loginUser);
+router.post("/register", registerRateLimiter, registerUser);
 router.get("/verify", verificarToken, verificarAutenticacao);
 router.get("/confirmar", confirmarEmail);
 

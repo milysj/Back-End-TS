@@ -94,6 +94,12 @@ describe('Middleware Coverage Boost', () => {
         expect(res.status).toBe(200);
     });
 
+    it('verificarProfessor permite OWNER', async () => {
+        app.get('/prof-owner', (req, res, next) => { req.user = { tipoUsuario: 'OWNER' }; next(); }, verificarProfessor, (req, res) => res.json({ ok: true }));
+        const res = await request(app).get('/prof-owner');
+        expect(res.status).toBe(200);
+    });
+
     it('verificarToken retorna 401 se token ausente', async () => {
         app.get('/no-token', verificarToken, (req, res) => res.json({ ok: true }));
         const res = await request(app).get('/no-token');
@@ -110,6 +116,12 @@ describe('Middleware Coverage Boost', () => {
         app.get('/admin-null', (req, res, next) => { req.user = {}; next(); }, verificarAdministrador, (req, res) => res.json({ ok: true }));
         const res = await request(app).get('/admin-null');
         expect(res.status).toBe(403);
+    });
+
+    it('verificarAdministrador permite OWNER', async () => {
+        app.get('/admin-owner', (req, res, next) => { req.user = { tipoUsuario: 'OWNER' }; next(); }, verificarAdministrador, (req, res) => res.json({ ok: true }));
+        const res = await request(app).get('/admin-owner');
+        expect(res.status).toBe(200);
     });
 
     it('verificarTokenOpcional funciona com token válido', async () => {

@@ -1,10 +1,6 @@
 import express from "express";
 import {
-    loginUser,
-    registerUser,
     obterTermos,
-    criarPerfil,
-    verificarAutenticacao,
     buscarMeusDados,
     atualizarDadosPessoais,
     mudarSenha,
@@ -26,8 +22,6 @@ import {
 } from "../controllers/twoFactorController";
 import { verificarToken } from "../middlewares/authMiddleware";
 import {
-    loginRateLimiter,
-    registerRateLimiter,
     verify2FALoginRateLimiter,
     twoFAAuthenticatedRateLimiter,
 } from "../middlewares/authRateLimit";
@@ -53,9 +47,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// --- Rotas de Autenticação e Registro ---
-router.post("/login", loginRateLimiter, loginUser);
-router.post("/register", registerRateLimiter, registerUser);
+// --- Termos ---
 router.get("/termos", obterTermos);
 
 // --- 2FA (login: público; setup: autenticado) ---
@@ -71,8 +63,6 @@ router.post(
 );
 
 // --- Rotas de Perfil e Usuário ---
-router.post("/criar-perfil", verificarToken, upload.single('fotoPerfil'), criarPerfil);
-router.get("/verify", verificarToken, verificarAutenticacao);
 router.get("/me", verificarToken, buscarMeusDados);
 router.delete("/me", verificarToken, excluirConta);
 router.get("/", verificarToken, listarUsuarios); 
