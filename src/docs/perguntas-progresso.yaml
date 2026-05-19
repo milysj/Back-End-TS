@@ -1,0 +1,261 @@
+openapi: 3.0.0
+info:
+  title: EstudeMy API - Perguntas e Progresso
+  version: 1.0.0
+paths:
+  /api/perguntas/fase/{faseId}:
+    get:
+      tags:
+        - Perguntas
+      summary: Listar perguntas de uma fase
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: faseId
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0c1"
+      responses:
+        '200':
+          description: Lista de perguntas
+        '401':
+          description: Não autorizado
+        '404':
+          description: Fase não encontrada
+        '500':
+          description: Erro interno
+  /api/perguntas:
+    post:
+      tags:
+        - Perguntas
+      summary: Criar nova pergunta em uma fase (Apenas Professores/Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                faseId:
+                  type: string
+                  example: "60f7a9b8c9e77c0015f8a0c1"
+                enunciado:
+                  type: string
+                  example: "Qual é a capital do Brasil?"
+                alternativas:
+                  type: array
+                  items:
+                    type: string
+                  example: ["São Paulo", "Rio de Janeiro", "Brasília", "Salvador"]
+                respostaCorreta:
+                  type: string
+                  example: "2"
+      responses:
+        '201':
+          description: Pergunta criada
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '403':
+          description: Proibido (Acesso restrito)
+        '500':
+          description: Erro interno
+  /api/perguntas/{faseId}/{perguntaIndex}:
+    put:
+      tags:
+        - Perguntas
+      summary: Atualizar uma pergunta específica (Apenas Professores/Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: faseId
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0c1"
+        - in: path
+          name: perguntaIndex
+          required: true
+          schema:
+            type: integer
+            example: 0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enunciado:
+                  type: string
+                  example: "Qual é a atual capital do Brasil?"
+      responses:
+        '200':
+          description: Pergunta atualizada
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '403':
+          description: Proibido (Acesso restrito)
+        '404':
+          description: Pergunta ou Fase não encontrada
+        '500':
+          description: Erro interno
+    delete:
+      tags:
+        - Perguntas
+      summary: Deletar uma pergunta específica (Apenas Professores/Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: faseId
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0c1"
+        - in: path
+          name: perguntaIndex
+          required: true
+          schema:
+            type: integer
+            example: 0
+      responses:
+        '200':
+          description: Pergunta deletada
+        '401':
+          description: Não autorizado
+        '403':
+          description: Proibido (Acesso restrito)
+        '404':
+          description: Pergunta ou Fase não encontrada
+        '500':
+          description: Erro interno
+          
+  /api/progresso/salvar:
+    post:
+      tags:
+        - Progresso
+      summary: Salvar resultado de fase completada
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                faseId:
+                  type: string
+                  example: "60f7a9b8c9e77c0015f8a0c1"
+                pontuacao:
+                  type: number
+                  example: 100
+      responses:
+        '200':
+          description: Progresso salvo
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '404':
+          description: Fase não encontrada
+        '500':
+          description: Erro interno
+  /api/progresso/salvar-resposta:
+    post:
+      tags:
+        - Progresso
+      summary: Salvar resposta individual
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                perguntaId:
+                  type: string
+                  example: "60f7a9b8c9e77c0015f8a0d1"
+                respostaDada:
+                  type: string
+                  example: "Brasília"
+      responses:
+        '200':
+          description: Resposta salva
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+  /api/progresso/verificar/{faseId}:
+    get:
+      tags:
+        - Progresso
+      summary: Verificar progresso de uma fase
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: faseId
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0c1"
+      responses:
+        '200':
+          description: Progresso retornado
+        '401':
+          description: Não autorizado
+        '404':
+          description: Fase não encontrada
+        '500':
+          description: Erro interno
+  /api/progresso/trilha/{trilhaId}:
+    get:
+      tags:
+        - Progresso
+      summary: Obter progresso geral de uma trilha
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: trilhaId
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0a1"
+      responses:
+        '200':
+          description: Progresso retornado
+        '401':
+          description: Não autorizado
+        '404':
+          description: Trilha não encontrada
+        '500':
+          description: Erro interno
+  /api/progresso/usuario:
+    get:
+      tags:
+        - Progresso
+      summary: Obter dados gerais do usuário (XP/nível)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dados retornados
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno

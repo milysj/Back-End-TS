@@ -1,0 +1,268 @@
+openapi: 3.0.0
+info:
+  title: EstudeMy API - Outras Rotas
+  version: 1.0.0
+paths:
+  /api/score/adicionar-xp:
+    post:
+      tags:
+        - Score
+      summary: Adicionar XP a um usuário
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                xp:
+                  type: number
+                  example: 50
+      responses:
+        '200':
+          description: XP adicionado
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+  /api/score/usuario:
+    get:
+      tags:
+        - Score
+      summary: Obter score do usuário
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Score retornado
+        '401':
+          description: Não autorizado
+        '404':
+          description: Score não encontrado
+        '500':
+          description: Erro interno
+  /api/score/calcular-xp:
+    post:
+      tags:
+        - Score
+      summary: Calcular XP baseado na porcentagem
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                percentage:
+                  type: number
+                  example: 85.5
+      responses:
+        '200':
+          description: XP calculado
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+          
+  /api/ranking:
+    get:
+      tags:
+        - Ranking
+      summary: Obter ranking geral
+      responses:
+        '200':
+          description: Lista de ranking
+        '500':
+          description: Erro interno
+  /api/ranking/nivel:
+    get:
+      tags:
+        - Ranking
+      summary: Obter ranking por nível
+      responses:
+        '200':
+          description: Lista de ranking por nível
+        '500':
+          description: Erro interno
+
+  /api/feedback:
+    post:
+      tags:
+        - Feedback
+      summary: Enviar feedback
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mensagem:
+                  type: string
+                  example: "Gostei muito da nova trilha de React!"
+                avaliacao:
+                  type: number
+                  example: 5
+      responses:
+        '201':
+          description: Feedback enviado
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+    get:
+      tags:
+        - Feedback
+      summary: Listar feedbacks (Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de feedbacks
+        '401':
+          description: Não autorizado
+        '403':
+          description: Acesso restrito
+        '500':
+          description: Erro interno
+
+  /api/home:
+    get:
+      tags:
+        - Home
+      summary: Obter dados da página inicial
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dados retornados
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+
+  /api/licoes-salvas:
+    post:
+      tags:
+        - Lições Salvas
+      summary: Salvar uma lição
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trilhaId:
+                  type: string
+                  example: "60f7a9b8c9e77c0015f8a0a1"
+      responses:
+        '201':
+          description: Lição salva
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+    get:
+      tags:
+        - Lições Salvas
+      summary: Listar lições salvas
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de lições
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+  /api/licoes-salvas/{trilhaId}:
+    delete:
+      tags:
+        - Lições Salvas
+      summary: Remover lição salva
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: trilhaId
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0a1"
+      responses:
+        '200':
+          description: Lição removida
+        '401':
+          description: Não autorizado
+        '404':
+          description: Lição não encontrada
+        '500':
+          description: Erro interno
+  /api/licoes-salvas/verificar/{trilhaId}:
+    get:
+      tags:
+        - Lições Salvas
+      summary: Verificar se lição está salva
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: trilhaId
+          required: true
+          schema:
+            type: string
+            example: "60f7a9b8c9e77c0015f8a0a1"
+      responses:
+        '200':
+          description: Status de verificação
+        '401':
+          description: Não autorizado
+        '404':
+          description: Trilha não encontrada
+        '500':
+          description: Erro interno
+
+  /api/materias:
+    get:
+      tags:
+        - Matérias
+      summary: Listar todas as matérias
+      responses:
+        '200':
+          description: Lista de matérias
+        '500':
+          description: Erro interno
+
+  /api/admin:
+    get:
+      tags:
+        - Admin
+      summary: Dados do painel administrativo (Apenas Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dados retornados
+        '401':
+          description: Não autorizado
+        '403':
+          description: Acesso restrito
+        '500':
+          description: Erro interno

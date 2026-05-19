@@ -10,6 +10,7 @@ import { httpLogMiddleware } from './middlewares/httpLogMiddleware';
 import { errorHandler } from './middlewares/errorHandler';
 import { registerUnhandledProcessHandlers } from './middlewares/unhandledProcessHandlers';
 import { appLogger } from './logging/appLogger';
+import { setupSwagger } from './config/swagger';
 
 // --- Importação das Rotas ---
 import authRoutes from './routes/authRoutes';
@@ -43,6 +44,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(httpLogMiddleware);
 
 // --- Registro das Rotas ---
+setupSwagger(app);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/fases', faseRoutes);

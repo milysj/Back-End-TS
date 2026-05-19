@@ -1,0 +1,358 @@
+openapi: 3.0.0
+info:
+  title: EstudeMy API - Users
+  version: 1.0.0
+paths:
+  /api/users/termos:
+    get:
+      tags:
+        - Usuários
+      summary: Obter termos de uso
+      responses:
+        '200':
+          description: Termos retornados
+        '500':
+          description: Erro interno
+  /api/users/2fa/verify-login:
+    post:
+      tags:
+        - Autenticação 2FA
+      summary: Verificar 2FA no login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: Verificado com sucesso
+        '400':
+          description: Token não fornecido
+        '401':
+          description: Token inválido
+        '429':
+          description: Rate limit excedido
+        '500':
+          description: Erro interno
+  /api/users/2fa/setup:
+    post:
+      tags:
+        - Autenticação 2FA
+      summary: Iniciar configuração 2FA
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Setup iniciado
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+  /api/users/2fa/confirm:
+    post:
+      tags:
+        - Autenticação 2FA
+      summary: Confirmar configuração 2FA
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  example: "654321"
+      responses:
+        '200':
+          description: 2FA confirmado
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+  /api/users/2fa/disable:
+    post:
+      tags:
+        - Autenticação 2FA
+      summary: Desativar 2FA
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 2FA desativado
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+  /api/users/2fa/regenerate-backup-codes:
+    post:
+      tags:
+        - Autenticação 2FA
+      summary: Gerar novos códigos de backup 2FA
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Códigos gerados
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+  /api/users/me:
+    get:
+      tags:
+        - Usuários
+      summary: Buscar meus dados
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dados retornados
+        '401':
+          description: Não autorizado
+        '404':
+          description: Usuário não encontrado
+        '500':
+          description: Erro interno
+    delete:
+      tags:
+        - Usuários
+      summary: Excluir conta
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Conta excluída
+        '401':
+          description: Não autorizado
+        '404':
+          description: Usuário não encontrado
+        '500':
+          description: Erro interno
+  /api/users/:
+    get:
+      tags:
+        - Usuários
+      summary: Listar todos os usuários (Apenas Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de usuários
+        '401':
+          description: Não autorizado
+        '403':
+          description: Acesso restrito
+        '500':
+          description: Erro interno
+  /api/users/dados-pessoais:
+    put:
+      tags:
+        - Usuários
+      summary: Atualizar dados pessoais
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:
+                  type: string
+                  example: "João Silva"
+                telefone:
+                  type: string
+                  example: "11999999999"
+      responses:
+        '200':
+          description: Dados atualizados
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+  /api/users/mudar-senha:
+    put:
+      tags:
+        - Usuários
+      summary: Mudar senha
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                senhaAtual:
+                  type: string
+                  example: senhaaluno
+                novaSenha:
+                  type: string
+                  example: novaSenhaMaisSegura!
+      responses:
+        '200':
+          description: Senha alterada
+        '400':
+          description: Senha atual incorreta
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+  /api/users/solicitar-recuperacao:
+    post:
+      tags:
+        - Usuários
+      summary: Solicitar recuperação de senha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: aluno@email.com
+      responses:
+        '200':
+          description: Email de recuperação enviado
+        '404':
+          description: Usuário não encontrado
+        '500':
+          description: Erro interno
+  /api/users/redefinir-senha:
+    post:
+      tags:
+        - Usuários
+      summary: Redefinir senha com token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  example: "xyz789token"
+                novaSenha:
+                  type: string
+                  example: novaSenhaMaisSegura!
+      responses:
+        '200':
+          description: Senha redefinida
+        '400':
+          description: Token inválido
+        '500':
+          description: Erro interno
+  /api/users/verificar-token/{token}:
+    get:
+      tags:
+        - Usuários
+      summary: Verificar token de redefinição de senha
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+            example: "xyz789token"
+      responses:
+        '200':
+          description: Token válido
+        '400':
+          description: Token inválido
+        '500':
+          description: Erro interno
+  /api/users/tema:
+    put:
+      tags:
+        - Usuários
+      summary: Atualizar tema (Light/Dark)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tema:
+                  type: string
+                  example: "dark"
+      responses:
+        '200':
+          description: Tema atualizado
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+  /api/users/idioma:
+    put:
+      tags:
+        - Usuários
+      summary: Atualizar idioma
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idioma:
+                  type: string
+                  example: "pt-BR"
+      responses:
+        '200':
+          description: Idioma atualizado
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
+  /api/users/atualizar-personagem:
+    put:
+      tags:
+        - Usuários
+      summary: Atualizar personagem
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                personagemId:
+                  type: string
+                  example: "guerreiro-01"
+      responses:
+        '200':
+          description: Personagem atualizado
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno
