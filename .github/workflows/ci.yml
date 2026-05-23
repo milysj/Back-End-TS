@@ -96,6 +96,10 @@ jobs:
             NEW_VERSION=$(semver -i patch $CURRENT_VERSION)
           fi
           
+          if [ "$NEW_VERSION" = "$CURRENT_VERSION" ]; then
+            NEW_VERSION=$(semver -i patch $CURRENT_VERSION)
+          fi
+          
           echo "Nova versão: $NEW_VERSION"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
       - name: Atualizar versão no package.json
