@@ -34,6 +34,31 @@ export const verificarToken = async (req: AuthRequest, res: Response, next: Next
             return res.status(401).json({ success: false, message: "Usuário do token não encontrado." });
         }
 
+        // Checar status
+        if (user.status === "BANIDO") {
+            return res.status(403).json({ success: false, message: "Esta conta foi banida." });
+        }
+
+        if (user.status === "BLOQUEADO") {
+            // Verificar se o bloqueio expirou
+            if (user.bloqueadoAte && new Date() > user.bloqueadoAte) {
+                user.status = "ATIVO";
+                user.bloqueadoAte = null;
+                await user.save();
+            } else {
+                let msgBloqueio = "Esta conta está temporariamente bloqueada.";
+                if (user.bloqueadoAte) {
+                    const dataFormatada = new Date(user.bloqueadoAte).toLocaleString("pt-BR", {
+                        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+                    });
+                    msgBloqueio = `Esta conta está bloqueada até ${dataFormatada}.`;
+                } else {
+                    msgBloqueio = "Esta conta está bloqueada por tempo indeterminado.";
+                }
+                return res.status(403).json({ success: false, message: msgBloqueio });
+            }
+        }
+
         req.user = user;
         next();
     } catch (error) {
@@ -57,7 +82,7 @@ export const verificarProfessor = (req: AuthRequest, res: Response, next: NextFu
     if (!req.user) {
         return res.status(401).json({ success: false, message: "Usuário não autenticado." });
     }
-    if (req.user.tipoUsuario !== "PROFESSOR" && req.user.tipoUsuario !== "ADMINISTRADOR") {
+    if (req.user.tipoUsuario !== "PROFESSOR" && req.user.tipoUsuario !== "ADMINISTRADOR" && req.user.tipoUsuario !== "OWNER") {
         return res.status(403).json({ success: false, message: "Acesso negado. Apenas professores e administradores podem realizar esta ação." });
     }
     next();
@@ -70,7 +95,7 @@ export const verificarAdministrador = (req: AuthRequest, res: Response, next: Ne
     if (!req.user) {
         return res.status(401).json({ success: false, message: "Usuário não autenticado." });
     }
-    if (req.user.tipoUsuario !== "ADMINISTRADOR") {
+    if (req.user.tipoUsuario !== "ADMINISTRADOR" && req.user.tipoUsuario !== "OWNER") {
         return res.status(403).json({ success: false, message: "Acesso negado. Apenas administradores podem realizar esta ação." });
     }
     next();

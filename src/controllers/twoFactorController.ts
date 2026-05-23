@@ -4,6 +4,7 @@ import * as jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User, { IUser } from '../models/user';
 import * as twoFactor from '../services/twoFactorservice';
+import { gerarToken, getExpiresInMs } from '../utils/tokenHelper';
 import {
   generatePlainBackupCodes,
   hashBackupCodes,
@@ -69,25 +70,46 @@ async function verifySecondFactor(
 }
 
 function issueSessionToken(usuario: IUser, res: Response) {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('A configuração do servidor está incompleta.');
-  }
   const payload = { id: usuario._id, email: usuario.email, tipoUsuario: usuario.tipoUsuario };
-  const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+  const token = gerarToken(payload);
+  const cookieMaxAge = getExpiresInMs();
+
+  const userData = {
+    id: String(usuario._id),
+    nome: usuario.nome,
+    email: usuario.email,
+    username: usuario.username,
+    personagem: usuario.personagem,
+    fotoPerfil: usuario.fotoPerfil,
+    xpTotal: usuario.xpTotal,
+    tema: usuario.tema,
+    idioma: usuario.idioma,
+    isVerified: usuario.isVerified,
+    twoFactorEnabled: usuario.twoFactorEnabled,
+  };
 
   res.cookie('token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: cookieMaxAge,
+  });
+
+  res.cookie('user_data', JSON.stringify(userData), {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: cookieMaxAge,
   });
 
   return res.json({
     success: true,
     token,
     perfilCriado: !!usuario.personagem,
-    usuario: { id: usuario._id, nome: usuario.nome },
+    usuario: {
+      ...userData,
+      tipoUsuario: usuario.tipoUsuario,
+    },
   });
 }
 

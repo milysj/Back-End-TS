@@ -40,33 +40,7 @@ interface UserScoreResponse extends ScoreData {
     xpAcumulado: number;
 }
 
-const SCORE_SERVICE_URL = process.env.SCORE_SERVICE_URL || "http://localhost:5001";
-
-export const calcularXP = (porcentagemAcertos: number): number => {
-  return Math.round((porcentagemAcertos / 100) * 500);
-};
-
-const chamarScoreService = async (endpoint: string, method = "GET", body: unknown = null, token: string | null = null): Promise<ScoreData | null> => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const options: RequestInit = { method, headers: { "Content-Type": "application/json" }, signal: controller.signal };
-    if (token) (options.headers as Headers).set("Authorization", token.startsWith("Bearer ") ? token : `Bearer ${token}`);
-    if (body && (method === "POST" || method === "PUT" || method === "PATCH")) options.body = JSON.stringify(body);
-    const response = await fetch(`${SCORE_SERVICE_URL}${endpoint}`, options);
-    clearTimeout(timeoutId);
-    if (!response.ok) {
-      console.error(`[SCORE Service] Erro HTTP ${response.status} em ${endpoint}`);
-      return null;
-    }
-    return await response.json() as ScoreData;
-  } catch (error) {
-    const err = error as Error;
-    if (err.name === "AbortError" || err.message.includes("ECONNREFUSED")) console.warn(`[SCORE Service] Microsserviço não disponível (${SCORE_SERVICE_URL}).`);
-    else console.error(`[SCORE Service] Erro ao chamar ${endpoint}:`, err.message);
-    return null;
-  }
-};
+import { adicionarXPInterno, obterScoreUsuarioInterno } from "./scoreController";
 
 export const salvarResultado = async (req: AuthRequest, res: Response): Promise<Response> => {
   try {
@@ -76,7 +50,7 @@ export const salvarResultado = async (req: AuthRequest, res: Response): Promise<
     const fase = await Fase.findById(faseId);
     if (!fase) return res.status(404).json({ message: "Fase não encontrada" });
     const porcentagemAcertos = Math.round((pontuacao / totalPerguntas) * 100);
-    const xpGanho = calcularXP(porcentagemAcertos);
+    const xpGanho = Math.round((porcentagemAcertos / 100) * 500);
     let progresso = await Progresso.findOne({ userId, faseId });
     if (progresso && progresso.concluido) return res.status(400).json({ message: "Esta fase já foi completada anteriormente", progresso });
     if (progresso) {
@@ -91,10 +65,14 @@ export const salvarResultado = async (req: AuthRequest, res: Response): Promise<
     } else {
       progresso = await Progresso.create({ userId, faseId, trilhaId: fase.trilhaId, pontuacao, totalPerguntas, porcentagemAcertos, xpGanho, concluido: true, respostasUsuario: respostasUsuario || [], perguntasRespondidas: Array.from({ length: totalPerguntas }, (_, i) => i) });
     }
-    const authHeader = req.headers.authorization || null;
-    const scoreData = await chamarScoreService("/api/score/adicionar-xp", "POST", { xpGanho }, authHeader) as AddXpResponse | null;
+    let scoreData;
+    try {
+      scoreData = await adicionarXPInterno(userId.toString(), xpGanho);
+    } catch (e) {
+      console.error("Erro interno ao adicionar XP:", e);
+    }
     const usuario = await User.findById(userId).select("-senha -email -dataNascimento");
-    return res.status(201).json({ message: "Resultado salvo com sucesso", progresso, xpGanho, nivel: scoreData?.score || { nivel: 1, xpAtual: 0, xpNecessario: 100, xpAcumulado: 0 }, usuario: { xpTotal: scoreData?.score?.xpTotal || usuario?.xpTotal, nivel: scoreData?.score?.nivel || 1 } });
+    return res.status(201).json({ message: "Resultado salvo com sucesso", progresso, xpGanho, nivel: scoreData || { nivel: 1, xpAtual: 0, xpNecessario: 100, xpAcumulado: 0 }, usuario: { xpTotal: scoreData?.xpTotal || usuario?.xpTotal, nivel: scoreData?.nivel || 1 } });
   } catch (error) {
     const err = error as Error;
     console.error("Erro ao salvar resultado:", err);
@@ -165,9 +143,13 @@ export const obterDadosUsuario = async (req: AuthRequest, res: Response): Promis
         const userId = req.user!._id;
         const usuario = await User.findById(userId).select("-senha -email -dataNascimento");
         if (!usuario) return res.status(404).json({ message: "Usuário não encontrado" });
-        const authHeader = req.headers.authorization || null;
-        let scoreData = await chamarScoreService("/api/score/usuario", "GET", null, authHeader) as UserScoreResponse | null;
-        if (!scoreData) scoreData = { xpTotal: 0, nivel: 1, xpAtual: 0, xpNecessario: 100, xpAcumulado: 0 };
+        let scoreData;
+        try {
+            scoreData = await obterScoreUsuarioInterno(userId.toString());
+        } catch (e) {
+            console.error("Erro interno ao obter score do usuário:", e);
+        }
+        if (!scoreData) scoreData = { xpTotal: 0, nivel: 1, xpAtual: 0, xpNecessario: 100, xpAcumulado: 0 } as any;
         return res.json({ usuario: { ...usuario.toObject(), xpTotal: scoreData.xpTotal || 0 }, nivel: scoreData.nivel || 1, xpAtual: scoreData.xpAtual || 0, xpNecessario: scoreData.xpNecessario || 100, xpAcumulado: scoreData.xpAcumulado || 0 });
     } catch (error) {
         const err = error as Error;

@@ -30,6 +30,7 @@
   "homepage": "https://github.com/EstudeMy/EstudeMyBackendNode#readme",
   "description": "Backend do projeto **EstudeMy**, desenvolvido em **Node.js + Express + MongoDB**, com autenticação via **JWT** e senhas criptografadas com **bcrypt**.",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@types/cookie-parser": "^1.4.10",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",

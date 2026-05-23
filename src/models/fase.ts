@@ -14,6 +14,8 @@ export interface IFase extends Document {
   conteudo: string;
   ordem: number;
   perguntas: IPergunta[];
+  personagem_selecionado?: string;
+  cenario?: string;
 }
 
 const perguntaSchema: Schema<IPergunta> = new mongoose.Schema({
@@ -39,6 +41,8 @@ const faseSchema: Schema<IFase> = new mongoose.Schema(
     conteudo: { type: String, default: "" },
     ordem: { type: Number, required: true },
     perguntas: [perguntaSchema],
+    personagem_selecionado: { type: String, default: "samurai" },
+    cenario: { type: String, default: "bg_dojo" },
   },
   { timestamps: true }
 );

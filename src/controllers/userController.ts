@@ -3,6 +3,7 @@ import User, { IUser } from "../models/user";
 import ResetToken from "../models/resetToken";
 import bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
+import { gerarToken, getExpiresInMs } from "../utils/tokenHelper";
 import crypto from "crypto";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../services/emailVerificationService";
 import { getFrontendBaseUrl } from "../config/publicUrls";
@@ -37,6 +38,30 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
         const senhaValida = await bcrypt.compare(senha, usuario.senha!);
         if (!senhaValida) return res.status(401).json({ message: "Credenciais inválidas." });
 
+        // Checar status da conta
+        if (usuario.status === "BANIDO") {
+            return res.status(403).json({ message: "Esta conta foi banida do sistema." });
+        }
+
+        if (usuario.status === "BLOQUEADO") {
+            if (usuario.bloqueadoAte && new Date() > usuario.bloqueadoAte) {
+                usuario.status = "ATIVO";
+                usuario.bloqueadoAte = null;
+                await usuario.save();
+            } else {
+                let msgBloqueio = "Esta conta está temporariamente bloqueada.";
+                if (usuario.bloqueadoAte) {
+                    const dataFormatada = new Date(usuario.bloqueadoAte).toLocaleString("pt-BR", {
+                        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+                    });
+                    msgBloqueio = `Esta conta está bloqueada até ${dataFormatada}.`;
+                } else {
+                    msgBloqueio = "Esta conta está bloqueada por tempo indeterminado.";
+                }
+                return res.status(403).json({ message: msgBloqueio });
+            }
+        }
+
         const secret = process.env.JWT_SECRET;
         if (!secret) {
             console.error("Erro fatal: JWT_SECRET não está definido.");
@@ -64,13 +89,35 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
         }
 
         const payload = { id: usuario._id, email: usuario.email, tipoUsuario: usuario.tipoUsuario };
-        const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+        const token = gerarToken(payload);
+        const cookieMaxAge = getExpiresInMs();
 
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
+            maxAge: cookieMaxAge
+        });
+
+        const userData = {
+            id: String(usuario._id),
+            nome: usuario.nome,
+            email: usuario.email,
+            username: usuario.username,
+            personagem: usuario.personagem,
+            fotoPerfil: usuario.fotoPerfil,
+            xpTotal: usuario.xpTotal,
+            tema: usuario.tema,
+            idioma: usuario.idioma,
+            isVerified: usuario.isVerified,
+            twoFactorEnabled: usuario.twoFactorEnabled,
+        };
+
+        res.cookie('user_data', JSON.stringify(userData), {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: cookieMaxAge
         });
 
         void appLogger.info("auth.login.success", { userId: String(usuario._id) });
@@ -78,7 +125,10 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
             success: true,
             token,
             perfilCriado: !!usuario.personagem, 
-            usuario: { id: usuario._id, nome: usuario.nome } 
+            usuario: {
+                ...userData,
+                tipoUsuario: usuario.tipoUsuario
+            } 
         });
     } catch (error) {
         const err = error as Error;
@@ -207,7 +257,8 @@ export const criarPerfil = async (req: AuthRequest, res: Response): Promise<Resp
 
 export const buscarMeusDados = async (req: AuthRequest, res: Response): Promise<Response> => {
     try {
-        const usuario = await User.findById(req.user!._id).select("-senha");
+        const camposPerfil = "nome email username tipoUsuario personagem fotoPerfil tema idioma xpTotal";
+        const usuario = await User.findById(req.user!._id).select(camposPerfil);
         if (!usuario) return res.status(404).json({ message: "Usuário não encontrado" });
         return res.json(usuario);
     } catch (error) {
