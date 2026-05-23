@@ -21,7 +21,7 @@ describe('User Domain - Unit & Integration Tests', () => {
 
     describe('userService (Unit)', () => {
         beforeEach(() => {
-            jest.restoreAllMocks();
+            jest.clearAllMocks();
         });
 
         it('listarUsuarios deve retornar lista de usuários sem senha', async () => {
