@@ -162,5 +162,24 @@ describe('Infrastructure Domain', () => {
             expect(() => gerarToken({ id: '1' })).toThrow();
             process.env.JWT_SECRET = old;
         });
+
+        it('getExpiresInMs converte expiração corretamente', async () => {
+            const { getExpiresInMs } = await import('../utils/tokenHelper');
+            const old = process.env.JWT_EXPIRES;
+
+            process.env.JWT_EXPIRES = '15m';
+            expect(getExpiresInMs()).toBe(15 * 60 * 1000);
+
+            process.env.JWT_EXPIRES = '2h';
+            expect(getExpiresInMs()).toBe(2 * 60 * 60 * 1000);
+
+            process.env.JWT_EXPIRES = '3d';
+            expect(getExpiresInMs()).toBe(3 * 24 * 60 * 60 * 1000);
+
+            process.env.JWT_EXPIRES = 'invalid';
+            expect(getExpiresInMs()).toBe(1 * 24 * 60 * 60 * 1000);
+
+            process.env.JWT_EXPIRES = old;
+        });
     });
 });

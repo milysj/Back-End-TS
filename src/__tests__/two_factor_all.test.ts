@@ -292,8 +292,17 @@ describe('2FA Domain - Consolidated Tests', () => {
   describe('TwoFactor Utilities (Unit)', () => {
     it('signTwoFactorPendingToken usa env var para expiração', () => {
         const { signTwoFactorPendingToken } = require('../utils/twoFactorPendingToken');
-        process.env.TWO_FACTOR_PENDING_TOKEN_EXPIRES_IN = '10m';
-        const token = signTwoFactorPendingToken('u1');
+        
+        process.env.TWO_FACTOR_PENDING_EXPIRES = '5m';
+        let token = signTwoFactorPendingToken('u1');
+        expect(token).toBeDefined();
+
+        process.env.TWO_FACTOR_PENDING_EXPIRES = '';
+        token = signTwoFactorPendingToken('u1');
+        expect(token).toBeDefined();
+
+        delete process.env.TWO_FACTOR_PENDING_EXPIRES;
+        token = signTwoFactorPendingToken('u1');
         expect(token).toBeDefined();
     });
 
