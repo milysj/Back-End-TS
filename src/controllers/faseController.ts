@@ -12,7 +12,7 @@ interface AuthRequest extends Request {
 
 export const criarFase = async (req: AuthRequest, res: Response): Promise<Response> => {
   try {
-    const { trilhaId, secaoId, titulo, descricao, conteudo, ordem, perguntas }: Partial<IFase> = req.body;
+    const { trilhaId, secaoId, titulo, descricao, conteudo, ordem, perguntas, personagem_selecionado, cenario }: Partial<IFase> = req.body;
     if (!trilhaId) return res.status(400).json({ message: "trilhaId é obrigatório" });
     const trilha = await Trilha.findById(trilhaId);
     if (!trilha) return res.status(404).json({ message: "Trilha não encontrada" });
@@ -26,7 +26,17 @@ export const criarFase = async (req: AuthRequest, res: Response): Promise<Respon
       if (secao.trilhaId.toString() !== trilhaId.toString()) return res.status(400).json({ message: "A seção não pertence a esta trilha" });
     }
     if (ordem === undefined) return res.status(400).json({ message: "ordem é obrigatória" });
-    const novaFase = await Fase.create({ trilhaId, secaoId: secaoId || null, titulo, descricao, conteudo: conteudo || "", ordem, perguntas: perguntas || [] });
+    const novaFase = await Fase.create({
+      trilhaId,
+      secaoId: secaoId || null,
+      titulo,
+      descricao,
+      conteudo: conteudo || "",
+      ordem,
+      perguntas: perguntas || [],
+      personagem_selecionado: personagem_selecionado || "samurai",
+      cenario: cenario || "bg_dojo"
+    });
     const fasePopulada = await Fase.findById(novaFase._id).populate("trilhaId", "titulo descricao materia");
     return res.status(201).json(fasePopulada);
   } catch (error) {
@@ -78,7 +88,7 @@ export const atualizarFase = async (req: AuthRequest, res: Response): Promise<Re
     const userId = req.user!._id;
     const tipoUsuario = req.user!.tipoUsuario;
     const { id } = req.params;
-    const { trilhaId, titulo, descricao, conteudo, ordem, perguntas } = req.body;
+    const { trilhaId, titulo, descricao, conteudo, ordem, perguntas, personagem_selecionado, cenario } = req.body;
     const faseAtual = await Fase.findById(id);
     if (!faseAtual) return res.status(404).json({ message: "Fase não encontrada" });
     if (tipoUsuario !== "ADMINISTRADOR") {
@@ -90,7 +100,16 @@ export const atualizarFase = async (req: AuthRequest, res: Response): Promise<Re
       if (!trilha) return res.status(404).json({ message: "Nova trilha não encontrada" });
       if (tipoUsuario !== "ADMINISTRADOR" && trilha.usuario.toString() !== userId.toString()) return res.status(403).json({ message: "Acesso negado para mover a fase." });
     }
-    const faseAtualizada = await Fase.findByIdAndUpdate(id, { trilhaId, titulo, descricao, conteudo, ordem, perguntas }, { new: true, runValidators: true }).populate("trilhaId", "titulo descricao materia");
+    const faseAtualizada = await Fase.findByIdAndUpdate(id, {
+      trilhaId,
+      titulo,
+      descricao,
+      conteudo,
+      ordem,
+      perguntas,
+      personagem_selecionado,
+      cenario
+    }, { new: true, runValidators: true }).populate("trilhaId", "titulo descricao materia");
     if (!faseAtualizada) return res.status(404).json({ message: "Fase não encontrada para atualizar" });
     return res.json(faseAtualizada);
   } catch (error) {

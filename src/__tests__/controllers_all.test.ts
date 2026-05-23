@@ -34,7 +34,6 @@ import User from '../models/user';
 import * as twoFactorPendingToken from '../utils/twoFactorPendingToken';
 import Materia from '../models/materia';
 import * as materiaController from '../controllers/materiaController';
-import { seedMaterias } from '../utils/seedMaterias';
 
 const oid = '507f1f77bcf86cd799439011';
 
@@ -2249,6 +2248,82 @@ describe('materiaController & Seed', () => {
     });
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await materiaController.getMaterias({}, res);
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+
+  it('criarMateria retorna 400 se nome estiver vazio', async () => {
+    const req = { body: { nome: '' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await materiaController.criarMateria(req as any, res as any);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('criarMateria retorna 409 se materia já existe', async () => {
+    Materia.findOne = jest.fn().mockResolvedValue({ nome: 'Matemática' });
+    const req = { body: { nome: 'Matemática' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await materiaController.criarMateria(req as any, res as any);
+    expect(res.status).toHaveBeenCalledWith(409);
+  });
+
+  it('criarMateria cria materia com sucesso', async () => {
+    Materia.findOne = jest.fn().mockResolvedValue(null);
+    const saveSpy = jest.fn();
+    jest.spyOn(Materia.prototype, 'save').mockImplementation(saveSpy);
+    const req = { body: { nome: 'Geografia' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await materiaController.criarMateria(req as any, res as any);
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it('criarMateria trata erro interno', async () => {
+    Materia.findOne = jest.fn().mockRejectedValue(new Error('fail'));
+    const req = { body: { nome: 'Geografia' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await materiaController.criarMateria(req as any, res as any);
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+
+  it('deletarMateria retorna 400 se nome estiver vazio', async () => {
+    const req = { params: { nome: '' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await materiaController.deletarMateria(req as any, res as any);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('deletarMateria retorna 404 se materia não existe', async () => {
+    Materia.findOne = jest.fn().mockResolvedValue(null);
+    const req = { params: { nome: 'Inexistente' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await materiaController.deletarMateria(req as any, res as any);
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('deletarMateria retorna 400 se materia possui trilhas associadas', async () => {
+    Materia.findOne = jest.fn().mockResolvedValue({ _id: 'm1', nome: 'Matemática' });
+    Trilha.findOne = jest.fn().mockResolvedValue({ _id: 't1', titulo: 'Trilha' });
+    const req = { params: { nome: 'Matemática' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await materiaController.deletarMateria(req as any, res as any);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('deletarMateria deleta materia com sucesso se não houver trilhas', async () => {
+    Materia.findOne = jest.fn().mockResolvedValue({ _id: 'm1', nome: 'Matemática' });
+    Trilha.findOne = jest.fn().mockResolvedValue(null);
+    Materia.deleteOne = jest.fn().mockResolvedValue({});
+    const req = { params: { nome: 'Matemática' } };
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+    await materiaController.deletarMateria(req as any, res as any);
+    expect(Materia.deleteOne).toHaveBeenCalledWith({ _id: 'm1' });
+    expect(res.json).toHaveBeenCalledWith({ message: 'Matéria excluída com sucesso.' });
+  });
+
+  it('deletarMateria trata erro interno', async () => {
+    Materia.findOne = jest.fn().mockRejectedValue(new Error('fail'));
+    const req = { params: { nome: 'Matemática' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await materiaController.deletarMateria(req as any, res as any);
     expect(res.status).toHaveBeenCalledWith(500);
   });
 });

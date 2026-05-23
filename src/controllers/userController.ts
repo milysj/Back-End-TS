@@ -3,6 +3,7 @@ import User, { IUser } from "../models/user";
 import ResetToken from "../models/resetToken";
 import bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
+import { gerarToken, getExpiresInMs } from "../utils/tokenHelper";
 import crypto from "crypto";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../services/emailVerificationService";
 import { getFrontendBaseUrl } from "../config/publicUrls";
@@ -88,13 +89,14 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
         }
 
         const payload = { id: usuario._id, email: usuario.email, tipoUsuario: usuario.tipoUsuario };
-        const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+        const token = gerarToken(payload);
+        const cookieMaxAge = getExpiresInMs();
 
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
+            maxAge: cookieMaxAge
         });
 
         const userData = {
@@ -115,7 +117,7 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
             httpOnly: false,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000
+            maxAge: cookieMaxAge
         });
 
         void appLogger.info("auth.login.success", { userId: String(usuario._id) });

@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import User from '../models/user';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { appLogger, logHandledError } from '../logging/appLogger';
+import { gerarToken, getExpiresInMs } from '../utils/tokenHelper';
 
 export const loginUser = async (req: Request, res: Response): Promise<Response> => {
   const { email, senha } = req.body;
@@ -38,17 +38,14 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
       tipoUsuario: user.tipoUsuario 
     };
 
-    const token = jwt.sign(
-      payload,
-      process.env.JWT_SECRET as string,
-      { expiresIn: "7d" }
-    );
+    const token = gerarToken(payload);
+    const cookieMaxAge = getExpiresInMs();
 
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: cookieMaxAge,
     });
 
     const userData = {
@@ -70,7 +67,7 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
       httpOnly: false, // Precisa ser acessível pelo JS do frontend
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: cookieMaxAge,
     });
 
     void appLogger.info('auth.legacy_login.success', { userId: String(user._id) });

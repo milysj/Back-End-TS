@@ -67,14 +67,14 @@ app.get('/', (req, res) => {
 
 app.use(errorHandler);
 
-import { seedMaterias } from './utils/seedMaterias';
+
 
 // --- Inicialização do Servidor ---
 if (process.env.NODE_ENV !== 'test') {
     registerUnhandledProcessHandlers();
     // Conecta ao banco de dados apenas quando o servidor real é iniciado 
     connectDB().then(() => {
-        seedMaterias();
+        // Semeadura removida a pedido do usuário (gerenciamento via painel de admin agora)
     });
 
     app.listen(PORT, () => {
