@@ -172,4 +172,94 @@ describe('Middleware Coverage Boost', () => {
             });
         });
     });
+
+    it('authRateLimit carrega limites de ambiente e valida-os', () => {
+        jest.isolateModules(() => {
+            const backupEnv = { ...process.env };
+            process.env.NODE_ENV = 'production';
+            process.env.RATE_LIMIT_LOGIN_MAX = '50';
+            process.env.RATE_LIMIT_REGISTER_MAX = 'invalid';
+            process.env.RATE_LIMIT_2FA_VERIFY_MAX = '-5';
+            
+            const { loginRateLimiter, registerRateLimiter, verify2FALoginRateLimiter } = require('../middlewares/authRateLimit');
+            
+            expect(loginRateLimiter).toBeDefined();
+            expect(registerRateLimiter).toBeDefined();
+            expect(verify2FALoginRateLimiter).toBeDefined();
+            
+            Object.assign(process.env, backupEnv);
+        });
+    });
+
+    it('verificarToken nega usuário BANIDO', async () => {
+        app.get('/auth', verificarToken, (req, res) => res.json({ ok: true }));
+        jwt.verify.mockReturnValue({ id: 'u_banned' });
+        User.findById.mockReturnValue({
+            select: jest.fn().mockResolvedValue({
+                _id: 'u_banned',
+                status: 'BANIDO'
+            })
+        });
+        
+        const res = await request(app).get('/auth').set('Authorization', 'Bearer tk');
+        expect(res.status).toBe(403);
+        expect(res.body.message).toContain('banida');
+    });
+
+    it('verificarToken desbloqueia usuário se bloqueadoAte já passou', async () => {
+        app.get('/auth', verificarToken, (req, res) => res.json({ ok: true, user: req.user }));
+        jwt.verify.mockReturnValue({ id: 'u_blocked_expired' });
+        
+        const saveMock = jest.fn().mockResolvedValue({});
+        const mockUser = {
+            _id: 'u_blocked_expired',
+            status: 'BLOQUEADO',
+            bloqueadoAte: new Date(Date.now() - 10000), // 10s ago
+            save: saveMock
+        };
+        User.findById.mockReturnValue({
+            select: jest.fn().mockResolvedValue(mockUser)
+        });
+        
+        const res = await request(app).get('/auth').set('Authorization', 'Bearer tk');
+        expect(res.status).toBe(200);
+        expect(mockUser.status).toBe('ATIVO');
+        expect(mockUser.bloqueadoAte).toBeNull();
+        expect(saveMock).toHaveBeenCalled();
+    });
+
+    it('verificarToken nega usuário BLOQUEADO temporariamente', async () => {
+        app.get('/auth', verificarToken, (req, res) => res.json({ ok: true }));
+        jwt.verify.mockReturnValue({ id: 'u_blocked_temp' });
+        
+        const futureDate = new Date(Date.now() + 10000);
+        User.findById.mockReturnValue({
+            select: jest.fn().mockResolvedValue({
+                _id: 'u_blocked_temp',
+                status: 'BLOQUEADO',
+                bloqueadoAte: futureDate
+            })
+        });
+        
+        const res = await request(app).get('/auth').set('Authorization', 'Bearer tk');
+        expect(res.status).toBe(403);
+        expect(res.body.message).toContain('bloqueada até');
+    });
+
+    it('verificarToken nega usuário BLOQUEADO sem data de expiração', async () => {
+        app.get('/auth', verificarToken, (req, res) => res.json({ ok: true }));
+        jwt.verify.mockReturnValue({ id: 'u_blocked_indef' });
+        
+        User.findById.mockReturnValue({
+            select: jest.fn().mockResolvedValue({
+                _id: 'u_blocked_indef',
+                status: 'BLOQUEADO',
+                bloqueadoAte: null
+            })
+        });
+        
+        const res = await request(app).get('/auth').set('Authorization', 'Bearer tk');
+        expect(res.status).toBe(403);
+        expect(res.body.message).toContain('tempo indeterminado');
+    });
 });

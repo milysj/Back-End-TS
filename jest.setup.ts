@@ -24,10 +24,18 @@ console.error = (...args: any[]) => {
   const msg = args[0];
   if (
     typeof msg === 'string' &&
-    (msg.includes('Erro interno ao obter scores:') ||
+    (msg.includes('Erro ao') ||
+     msg.includes('Erro interno ao') ||
+     msg.includes('Erro em') ||
+     msg.includes('Erro fatal:') ||
      msg.includes('[BetterStackLogSink]') ||
      msg.includes('JWT_SECRET não está definido') ||
-     msg.includes('LLM_DEMO_URL'))
+     msg.includes('LLM_DEMO_URL') ||
+     msg.includes('verify2FALogin:') ||
+     msg.includes('iniciarSetup2FA:') ||
+     msg.includes('confirmarSetup2FA:') ||
+     msg.includes('desativar2FA:') ||
+     msg.includes('regenerarBackupCodes2FA:'))
   ) {
     return;
   }
