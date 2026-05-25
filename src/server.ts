@@ -1,5 +1,5 @@
 // Carrega .env antes de qualquer outro módulo ler process.env (tokens Better Stack, Mongo, etc.).
-import 'dotenv/config';
+import './config/loadEnv';
 import './logging/installConsolePatch';
 
 import express from 'express';
@@ -81,6 +81,7 @@ if (process.env.NODE_ENV !== 'test') {
         void appLogger.info('server.started', {
             port: PORT,
             nodeEnv: process.env.NODE_ENV || 'development',
+            appEnv: process.env.APP_ENV || 'development',
         });
     });
 }
