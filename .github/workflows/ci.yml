@@ -212,7 +212,7 @@ jobs:
   build-prod:
     name: build-prod
     runs-on: ubuntu-latest
-    needs: build-hml
+    needs: [build-hml, version]
     environment: PROD
     if: github.ref == 'refs/heads/main'
     steps:
