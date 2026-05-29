@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -12,7 +13,8 @@ permissions:
 jobs:
   version:
     runs-on: ubuntu-latest
-
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
@@ -40,6 +42,7 @@ jobs:
       - name: Instalar semver
         if: github.ref == 'refs/heads/main'
         run: npm install -g semver
+
       - name: Criar nova tag caso não exista
         if: github.ref == 'refs/heads/main'
         id: create_initial_tag
@@ -53,6 +56,7 @@ jobs:
             git tag -a v0.0.0 -m "Initial release"
             git push origin v0.0.0
           fi
+
       - name: Calcular nova versão
         if: github.ref == 'refs/heads/main'
         id: version
@@ -106,6 +110,7 @@ jobs:
           
           echo "Nova versão: $NEW_VERSION"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
       - name: Atualizar versão no package.json
         if: github.ref == 'refs/heads/main'
         run: |
@@ -139,7 +144,13 @@ jobs:
             -Dsonar.sources=src
             -Dsonar.tests=src
             -Dsonar.test.inclusions=**/*.test.ts,**/*.spec.ts
-      
+
+      - name: Obter versão do package.json
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Enviar email em caso de falha
         if: failure()
         uses: dawidd6/action-send-mail@v3
@@ -148,8 +159,98 @@ jobs:
           server_port: 587
           username: ${{ secrets.EMAIL_ORIGIN }}
           password: ${{ secrets.EMAIL_APP_PASSWORD }}  
-          subject: "Falha no CI - Back-End-TS"
-          body: "O processo de CI falhou. Por favor, verifique os logs para mais detalhes."
+          subject: "Falha no CI (version) - Back-End-TS"
+          body: "O processo de CI/versão falhou. Por favor, verifique os logs para mais detalhes."
           to: ${{ secrets.EMAIL_DESTINO }}
-          from: ${{ secrets.EMAIL_ORIGIN }}   
-        
+          from: ${{ secrets.EMAIL_ORIGIN }}
+
+  build-hml:
+    name: build-hml
+    runs-on: ubuntu-latest
+    needs: version
+    environment: HML
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '22'
+
+      - name: Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build e Push Docker (HML)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/estudemy-backend:hml
+            ${{ secrets.DOCKER_USERNAME }}/estudemy-backend:hml-${{ needs.version.outputs.version }}
+
+      - name: Enviar email em caso de falha
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_ORIGIN }}
+          password: ${{ secrets.EMAIL_APP_PASSWORD }}  
+          subject: "Falha no CI (build-hml) - Back-End-TS"
+          body: "A build de HML falhou. Por favor, verifique os logs para mais detalhes."
+          to: ${{ secrets.EMAIL_DESTINO }}
+          from: ${{ secrets.EMAIL_ORIGIN }}
+
+  build-prod:
+    name: build-prod
+    runs-on: ubuntu-latest
+    needs: build-hml
+    environment: PROD
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '22'
+
+      - name: Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build e Push Docker (PROD)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/estudemy-backend:prod
+            ${{ secrets.DOCKER_USERNAME }}/estudemy-backend:${{ needs.version.outputs.version }}
+
+      - name: Enviar email em caso de falha
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_ORIGIN }}
+          password: ${{ secrets.EMAIL_APP_PASSWORD }}  
+          subject: "Falha no CI (build-prod) - Back-End-TS"
+          body: "A build de PROD falhou. Por favor, verifique os logs para mais detalhes."
+          to: ${{ secrets.EMAIL_DESTINO }}
+          from: ${{ secrets.EMAIL_ORIGIN }}
