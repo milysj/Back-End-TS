@@ -30,6 +30,7 @@ services:
     environment:
       PORT: "${PORT:-5000}"
       NODE_ENV: ${NODE_ENV:-development}
+      APP_ENV: ${APP_ENV}
       MONGO_URI: ${MONGO_URI}
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
@@ -45,9 +46,9 @@ services:
   frontend:
     build:
       context: ../Front-End-TS
-      dockerfile: Dockerfile
+      dockerfile: dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:5000
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
     restart: unless-stopped
     ports:
       - "3000:3000"
