@@ -39,6 +39,22 @@ jobs:
       - name: Build imagem Docker (validação)
         run: docker build -t estudemy-backend:ci .
 
+      - name: Rodar testes com coverage
+        run: npm run test -- --coverage
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=milysj_Back-End-TS
+            -Dsonar.organization=milysj
+            -Dsonar.sources=src
+            -Dsonar.tests=src
+            -Dsonar.test.inclusions=**/*.test.ts,**/*.spec.ts
+
       - name: Instalar semver
         if: github.ref == 'refs/heads/main'
         run: npm install -g semver
@@ -128,22 +144,6 @@ jobs:
           git commit -m "chore(release): version ${{ steps.version.outputs.new_version }}"
           git tag v${{ steps.version.outputs.new_version }}
           git push origin main --tags
-
-      - name: Rodar testes com coverage
-        run: npm run test -- --coverage
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=milysj_Back-End-TS
-            -Dsonar.organization=milysj
-            -Dsonar.sources=src
-            -Dsonar.tests=src
-            -Dsonar.test.inclusions=**/*.test.ts,**/*.spec.ts
 
       - name: Obter versão do package.json
         id: get_version
