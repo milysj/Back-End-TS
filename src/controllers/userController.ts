@@ -109,6 +109,12 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
             xpTotal: usuario.xpTotal,
             tema: usuario.tema,
             idioma: usuario.idioma,
+            emailNotifications: usuario.emailNotifications,
+            courseUpdates: usuario.courseUpdates,
+            marketingEmails: usuario.marketingEmails,
+            publicProfile: usuario.publicProfile,
+            showEmail: usuario.showEmail,
+            showProgress: usuario.showProgress,
             isVerified: usuario.isVerified,
             twoFactorEnabled: usuario.twoFactorEnabled,
         };
@@ -257,7 +263,7 @@ export const criarPerfil = async (req: AuthRequest, res: Response): Promise<Resp
 
 export const buscarMeusDados = async (req: AuthRequest, res: Response): Promise<Response> => {
     try {
-        const camposPerfil = "nome email username tipoUsuario personagem fotoPerfil tema idioma xpTotal";
+        const camposPerfil = "nome email username tipoUsuario personagem fotoPerfil tema idioma xpTotal emailNotifications courseUpdates marketingEmails publicProfile showEmail showProgress";
         const usuario = await User.findById(req.user!._id).select(camposPerfil);
         if (!usuario) return res.status(404).json({ message: "Usuário não encontrado" });
         return res.json(usuario);
@@ -481,5 +487,51 @@ export const confirmarEmail = async (req: Request, res: Response): Promise<void>
     } catch (error) {
         logHandledError("userController.confirmarEmail", error);
         res.status(500).json({ message: "Erro interno ao processar verificação." });
+    }
+};
+
+export const atualizarPreferencias = async (req: AuthRequest, res: Response): Promise<Response> => {
+    try {
+        const {
+            emailNotifications,
+            courseUpdates,
+            marketingEmails,
+            publicProfile,
+            showEmail,
+            showProgress,
+            tema,
+            idioma
+        } = req.body;
+
+        const camposParaAtualizar: any = {};
+        if (emailNotifications !== undefined) camposParaAtualizar.emailNotifications = emailNotifications;
+        if (courseUpdates !== undefined) camposParaAtualizar.courseUpdates = courseUpdates;
+        if (marketingEmails !== undefined) camposParaAtualizar.marketingEmails = marketingEmails;
+        if (publicProfile !== undefined) camposParaAtualizar.publicProfile = publicProfile;
+        if (showEmail !== undefined) camposParaAtualizar.showEmail = showEmail;
+        if (showProgress !== undefined) camposParaAtualizar.showProgress = showProgress;
+        if (tema !== undefined) {
+            if (["light", "dark"].includes(tema)) {
+                camposParaAtualizar.tema = tema;
+            } else {
+                return res.status(400).json({ message: "Tema inválido." });
+            }
+        }
+        if (idioma !== undefined) {
+            if (["pt-BR", "en-US", "es-ES"].includes(idioma)) {
+                camposParaAtualizar.idioma = idioma;
+            } else {
+                return res.status(400).json({ message: "Idioma inválido." });
+            }
+        }
+
+        const usuarioAtualizado = await User.findByIdAndUpdate(req.user!._id, camposParaAtualizar, { new: true }).select("-senha");
+        if (!usuarioAtualizado) return res.status(404).json({ message: "Usuário não encontrado" });
+
+        return res.json({ message: "Preferências atualizadas com sucesso!", usuario: usuarioAtualizado });
+    } catch (error) {
+        const err = error as Error;
+        logHandledError("userController.atualizarPreferencias", err);
+        return res.status(500).json({ message: "Erro ao atualizar preferências." });
     }
 };

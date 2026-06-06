@@ -11,6 +11,7 @@ import * as feedbackController from '../controllers/feedbackController';
 import * as licaoSalvaController from '../controllers/licaoSalvaController';
 import * as perguntaController from '../controllers/perguntaController';
 import * as userController from '../controllers/userController';
+import * as contatoController from '../controllers/contatoController';
 import * as homeController from '../controllers/homeController';
 import * as progressoController from '../controllers/progressoController';
 import * as authController from '../controllers/authController';
@@ -25,6 +26,7 @@ import Fase from '../models/fase';
 import Trilha from '../models/trilha';
 import Secao from '../models/secao';
 import Feedback from '../models/feedback';
+import Contato from '../models/contato';
 import bcrypt from 'bcryptjs';
 import LicaoSalva from '../models/licaoSalva';
 import ResetToken from '../models/resetToken';
@@ -323,6 +325,52 @@ describe('feedbackController extra', () => {
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await feedbackController.listarFeedbacks(req, res);
     expect(res.status).toHaveBeenCalledWith(200);
+  });
+});
+
+describe('contatoController tests', () => {
+  it('criarContato missing fields returns 400', async () => {
+    const req = { body: { nome: 'x' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await contatoController.criarContato(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+  it('criarContato valid fields returns 201', async () => {
+    Contato.create = jest.fn().mockResolvedValue({ _id: '1', nome: 'x', email: 'x@x.com', assunto: 'a', mensagem: 'm', data: new Date() });
+    const req = { body: { nome: 'x', email: 'x@x.com', assunto: 'a', mensagem: 'm' }, user: { _id: '507f1f77bcf86cd799439011' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await contatoController.criarContato(req, res);
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+  it('listarContatos non-admin returns 403', async () => {
+    const req = { user: { tipoUsuario: 'ALUNO' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await contatoController.listarContatos(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+  it('listarContatos admin returns 200', async () => {
+    const chain = { populate: jest.fn().mockReturnThis(), sort: jest.fn().mockResolvedValue(['c']) };
+    Contato.find = jest.fn().mockReturnValue(chain);
+    const req = { user: { tipoUsuario: 'ADMINISTRADOR' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await contatoController.listarContatos(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+  it('criarContato returns 500 on database error', async () => {
+    Contato.create = jest.fn().mockRejectedValue(new Error('db error'));
+    const req = { body: { nome: 'x', email: 'x@x.com', assunto: 'a', mensagem: 'm' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await contatoController.criarContato(req, res);
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+  it('listarContatos returns 500 on database error', async () => {
+    Contato.find = jest.fn().mockImplementation(() => {
+      throw new Error('db error');
+    });
+    const req = { user: { tipoUsuario: 'ADMINISTRADOR' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await contatoController.listarContatos(req, res);
+    expect(res.status).toHaveBeenCalledWith(500);
   });
 });
 

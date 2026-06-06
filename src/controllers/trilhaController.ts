@@ -86,7 +86,19 @@ export const deletarTrilha = async (req: AuthRequest, res: Response): Promise<Re
 export const trilhasNovidades = async (req: AuthRequest, res: Response): Promise<Response> => {
     try {
         const userId = req.user!._id;
-        const trilhas = await Trilha.find({ usuariosIniciaram: { $ne: userId } }).select("-usuariosIniciaram").sort({ createdAt: -1 }).limit(10);
+        const { idioma } = (req.query || {}) as { idioma?: string };
+        const query: any = { usuariosIniciaram: { $ne: userId } };
+        if (idioma) {
+            if (idioma === "Português") {
+                query.$or = [
+                    { idioma: "Português" },
+                    { idioma: { $exists: false } }
+                ];
+            } else {
+                query.idioma = idioma;
+            }
+        }
+        const trilhas = await Trilha.find(query).select("-usuariosIniciaram").sort({ createdAt: -1 }).limit(10);
         return res.json(trilhas);
     } catch (error) {
         const err = error as Error;
@@ -96,7 +108,19 @@ export const trilhasNovidades = async (req: AuthRequest, res: Response): Promise
 };
 export const trilhasPopulares = async (req: Request, res: Response): Promise<Response> => {
     try {
-        const trilhas = await Trilha.find().select("-usuariosIniciaram").sort({ visualizacoes: -1 }).limit(10);
+        const { idioma } = (req.query || {}) as { idioma?: string };
+        const query: any = {};
+        if (idioma) {
+            if (idioma === "Português") {
+                query.$or = [
+                    { idioma: "Português" },
+                    { idioma: { $exists: false } }
+                ];
+            } else {
+                query.idioma = idioma;
+            }
+        }
+        const trilhas = await Trilha.find(query).select("-usuariosIniciaram").sort({ visualizacoes: -1 }).limit(10);
         return res.json(trilhas);
     } catch (error) {
         const err = error as Error;
@@ -107,7 +131,19 @@ export const trilhasPopulares = async (req: Request, res: Response): Promise<Res
 export const trilhasContinue = async (req: AuthRequest, res: Response): Promise<Response> => {
     try {
         const userId = req.user!._id;
-        const trilhas = await Trilha.find({ usuariosIniciaram: userId }).select("-usuariosIniciaram").sort({ updatedAt: -1 }).limit(10);
+        const { idioma } = (req.query || {}) as { idioma?: string };
+        const query: any = { usuariosIniciaram: userId };
+        if (idioma) {
+            if (idioma === "Português") {
+                query.$or = [
+                    { idioma: "Português" },
+                    { idioma: { $exists: false } }
+                ];
+            } else {
+                query.idioma = idioma;
+            }
+        }
+        const trilhas = await Trilha.find(query).select("-usuariosIniciaram").sort({ updatedAt: -1 }).limit(10);
         return res.json(trilhas);
     } catch (error) {
         const err = error as Error;
