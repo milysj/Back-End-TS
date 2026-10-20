@@ -48,15 +48,23 @@ export const adicionarXPInterno = async (userId: string | mongoose.Types.ObjectI
     ? new mongoose.Types.ObjectId(userId) 
     : userId;
 
-  let score = await Score.findOne({ userId: userIdObjectId });
-
-  if (!score) {
-    score = await Score.create({
-      userId: userIdObjectId,
-      xpTotal: xpGanho,
-    });
+  let score: any;
+  if (typeof Score.findOneAndUpdate === "function") {
+    score = await Score.findOneAndUpdate(
+      { userId: userIdObjectId },
+      { $inc: { xpTotal: xpGanho } },
+      { new: true, upsert: true }
+    );
   } else {
-    score.xpTotal = (score.xpTotal || 0) + xpGanho;
+    score = await Score.findOne({ userId: userIdObjectId });
+    if (!score) {
+      score = await Score.create({
+        userId: userIdObjectId,
+        xpTotal: xpGanho,
+      });
+    } else {
+      score.xpTotal = (score.xpTotal || 0) + xpGanho;
+    }
   }
 
   const dadosNivel = calcularNivel(score.xpTotal);

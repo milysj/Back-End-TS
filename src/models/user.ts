@@ -40,6 +40,7 @@ export interface IUser extends Document {
   twoFactorLockUntil?: Date;
   status: "ATIVO" | "BLOQUEADO" | "BANIDO";
   bloqueadoAte?: Date | null;
+  tentativasLogin: number;
   canPromoteToAdmin: boolean;
 }
 
@@ -123,6 +124,7 @@ const UserSchema: Schema = new mongoose.Schema(
       default: "ATIVO",
     },
     bloqueadoAte: { type: Date, default: null },
+    tentativasLogin: { type: Number, default: 0 },
     canPromoteToAdmin: { type: Boolean, default: false },
   },
   { timestamps: true }

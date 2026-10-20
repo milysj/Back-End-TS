@@ -29,16 +29,13 @@ interface AuthRequest extends Request {
 export const loginUser = async (req: Request, res: Response): Promise<Response> => {
     const { email, senha } = req.body;
     if (!email || !senha) return res.status(400).json({ message: "Email e senha são obrigatórios." });
-    const emailLower = email.toLowerCase();
+    const emailLower = typeof email === 'string' ? email.toLowerCase() : String(email);
 
     try {
         const usuario = await User.findOne({ email: emailLower }).select('+senha');
         if (!usuario) return res.status(401).json({ message: "Credenciais inválidas." });
 
-        const senhaValida = await bcrypt.compare(senha, usuario.senha!);
-        if (!senhaValida) return res.status(401).json({ message: "Credenciais inválidas." });
-
-        // Checar status da conta
+        // 1. Checar status da conta antes de comparar a senha
         if (usuario.status === "BANIDO") {
             return res.status(403).json({ message: "Esta conta foi banida do sistema." });
         }
@@ -47,6 +44,7 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
             if (usuario.bloqueadoAte && new Date() > usuario.bloqueadoAte) {
                 usuario.status = "ATIVO";
                 usuario.bloqueadoAte = null;
+                usuario.tentativasLogin = 0;
                 await usuario.save();
             } else {
                 let msgBloqueio = "Esta conta está temporariamente bloqueada.";
@@ -60,6 +58,27 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
                 }
                 return res.status(403).json({ message: msgBloqueio });
             }
+        }
+
+        // 2. Validar senha e aplicar lockout progressivo
+        const senhaValida = await bcrypt.compare(senha, usuario.senha!);
+        if (!senhaValida) {
+            usuario.tentativasLogin = (usuario.tentativasLogin || 0) + 1;
+            if (usuario.tentativasLogin >= 5) {
+                usuario.status = "BLOQUEADO";
+                usuario.bloqueadoAte = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+                usuario.tentativasLogin = 0;
+                if (typeof usuario.save === 'function') await usuario.save();
+                return res.status(403).json({ message: "Muitas tentativas incorretas. Sua conta foi temporariamente bloqueada por 15 minutos." });
+            }
+            if (typeof usuario.save === 'function') await usuario.save();
+            return res.status(401).json({ message: "Credenciais inválidas." });
+        }
+
+        // 3. Sucesso na senha: resetar tentativas incorretas
+        if (usuario.tentativasLogin > 0) {
+            usuario.tentativasLogin = 0;
+            if (typeof usuario.save === 'function') await usuario.save();
         }
 
         const secret = process.env.JWT_SECRET;
