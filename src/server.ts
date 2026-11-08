@@ -62,7 +62,18 @@ const allowedOrigins = process.env.FRONTEND_URL
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+        if (!origin || process.env.NODE_ENV !== 'production') {
+            return callback(null, true);
+        }
+        const cleanOrigin = origin.trim().replace(/\/+$/, '');
+        const hostOnly = cleanOrigin.replace(/^https?:\/\//, '');
+        const isAllowed = allowedOrigins.some((allowed) => {
+            const cleanAllowed = allowed.trim().replace(/\/+$/, '');
+            const allowedHost = cleanAllowed.replace(/^https?:\/\//, '');
+            return cleanOrigin === cleanAllowed || hostOnly === allowedHost;
+        });
+
+        if (isAllowed) {
             callback(null, true);
         } else {
             callback(new Error('Origem não permitida pelo CORS'));
