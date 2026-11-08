@@ -257,7 +257,7 @@ export async function gerarSugestaoTrilhaViaServicoIa(input: GerarSugestaoTrilha
 
   const numeroSecoes = Math.min(8, Math.max(1, input.numeroSecoes ?? 2));
   const fasesPorSecao = Math.min(6, Math.max(1, input.fasesPorSecao ?? 1));
-  const perguntasPorFase = Math.min(8, Math.max(2, input.perguntasPorFase ?? 4));
+  const perguntasPorFase = Math.min(12, Math.max(2, input.perguntasPorFase ?? 4));
   const dificuldade: DificuldadeTrilha = input.dificuldade || "Facil";
 
   const contextoRag = await buscarContextoRagTrilha(materia);
