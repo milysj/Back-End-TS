@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { IUser } from "../models/user";
 import { gerarSugestaoTrilhaViaServicoIa, type DificuldadeTrilha } from "../services/geminiTrilhaSugestaoService";
+import { logHandledError } from "../logging/appLogger";
 
 interface AuthRequest extends Request {
   user?: IUser;
@@ -9,18 +10,17 @@ interface AuthRequest extends Request {
 const DIFICULDADES: DificuldadeTrilha[] = ["Facil", "Medio", "Dificil"];
 
 /**
- * POST /api/trilhas/gerar-com-ia — encaminha ao microsserviço Integra-o-LLM (`POST .../api/trilha/gerar`).
- * `TRILHA_IA_API_URL`: URL base (ex.: http://localhost:3780) ou URL completa do endpoint.
- * O backend monta o texto de tema com matéria, objetivo e RAG do Mongo; resposta `{ modulos, descricaoTrilha }` é convertida para `{ trilha, secoes }`.
+ * POST /api/trilhas/gerar-com-ia — gera sugestão de trilha didática diretamente com Google Gemini.
+ * Utiliza GEMINI_API_KEY do .env.
  */
 export const gerarTrilhaComIa = async (req: AuthRequest, res: Response): Promise<Response> => {
   try {
-    if (!process.env.TRILHA_IA_API_URL?.trim()) {
+    if (!process.env.GEMINI_API_KEY?.trim() && !process.env.TRILHA_IA_API_URL?.trim()) {
       return res
         .status(503)
         .json({
           message:
-            "Serviço de IA não configurado. Defina TRILHA_IA_API_URL (ex.: http://localhost:3780 — Integra-o-LLM). Opcional: TRILHA_IA_API_KEY = SERVICE_API_KEY do microsserviço.",
+            "Serviço de IA não configurado. Defina GEMINI_API_KEY no .env do servidor.",
         });
     }
 
@@ -59,6 +59,7 @@ export const gerarTrilhaComIa = async (req: AuthRequest, res: Response): Promise
     return res.status(200).json(sugestao);
   } catch (error) {
     const err = error as Error;
+    logHandledError("trilhaIaController.gerarTrilhaComIa", err);
     console.error("Erro em gerarTrilhaComIa:", err.message);
     return res.status(500).json({ message: "Erro ao gerar sugestões com IA.", error: err.message });
   }
