@@ -85,7 +85,13 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(mongoSanitize());
+// Middleware compatível com Express 5 para express-mongo-sanitize (evita erro de getter em req.query)
+app.use((req, res, next) => {
+    if (req.body) mongoSanitize.sanitize(req.body);
+    if (req.params) mongoSanitize.sanitize(req.params);
+    if (req.query) mongoSanitize.sanitize(req.query);
+    next();
+});
 app.use(httpLogMiddleware);
 app.use('/api', globalRateLimiter);
 
