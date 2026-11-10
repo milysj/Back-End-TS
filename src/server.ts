@@ -43,8 +43,16 @@ if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === '1') {
 
 // --- Middlewares de Segurança ---
 app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginResourcePolicy: false,
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "blob:", "https:"],
+            connectSrc: ["'self'", "https:"],
+        }
+    },
     crossOriginEmbedderPolicy: false,
 }));
 
@@ -58,7 +66,6 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
 }));
-app.options('*', cors());
 
 app.use(cookieParser());
 app.use(express.json());
