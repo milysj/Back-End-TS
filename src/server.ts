@@ -43,44 +43,22 @@ if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === '1') {
 
 // --- Middlewares de Segurança ---
 app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com"],
-            imgSrc: ["'self'", "data:", "blob:", "https:"],
-            connectSrc: ["'self'", "https:"],
-        }
-    },
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: false,
     crossOriginEmbedderPolicy: false,
 }));
 
-const allowedOrigins = process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',').map((u) => u.trim())
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
-
+// CORS temporariamente aberto para qualquer origem
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || process.env.NODE_ENV !== 'production') {
-            return callback(null, true);
-        }
-        const cleanOrigin = origin.trim().replace(/\/+$/, '');
-        const hostOnly = cleanOrigin.replace(/^https?:\/\//, '');
-        const isAllowed = allowedOrigins.some((allowed) => {
-            const cleanAllowed = allowed.trim().replace(/\/+$/, '');
-            const allowedHost = cleanAllowed.replace(/^https?:\/\//, '');
-            return cleanOrigin === cleanAllowed || hostOnly === allowedHost;
-        });
-
-        if (isAllowed) {
-            callback(null, true);
-        } else {
-            callback(new Error('Origem não permitida pelo CORS'));
-        }
+        // Permite qualquer origem e reflete o cabeçalho Origin
+        callback(null, true);
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
 }));
+app.options('*', cors());
 
 app.use(cookieParser());
 app.use(express.json());
