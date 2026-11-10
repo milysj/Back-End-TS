@@ -14,6 +14,7 @@ export interface ITrilha extends Document {
   imagem: string;
   usuariosIniciaram: mongoose.Types.ObjectId[];
   visualizacoes: number;
+  idioma?: string;
 }
 
 const trilhaSchema: Schema<ITrilha> = new mongoose.Schema({
@@ -37,6 +38,7 @@ const trilhaSchema: Schema<ITrilha> = new mongoose.Schema({
     ref: "User" 
   }],
   visualizacoes: { type: Number, default: 0 },
+  idioma: { type: String, default: "Português" },
 }, { timestamps: true });
 
 const Trilha = mongoose.model<ITrilha>("Trilha", trilhaSchema);

@@ -84,6 +84,12 @@ function issueSessionToken(usuario: IUser, res: Response) {
     xpTotal: usuario.xpTotal,
     tema: usuario.tema,
     idioma: usuario.idioma,
+    emailNotifications: usuario.emailNotifications,
+    courseUpdates: usuario.courseUpdates,
+    marketingEmails: usuario.marketingEmails,
+    publicProfile: usuario.publicProfile,
+    showEmail: usuario.showEmail,
+    showProgress: usuario.showProgress,
     isVerified: usuario.isVerified,
     twoFactorEnabled: usuario.twoFactorEnabled,
   };

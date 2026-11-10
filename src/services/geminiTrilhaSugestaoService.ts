@@ -257,7 +257,7 @@ export async function gerarSugestaoTrilhaViaServicoIa(input: GerarSugestaoTrilha
 
   const numeroSecoes = Math.min(8, Math.max(1, input.numeroSecoes ?? 2));
   const fasesPorSecao = Math.min(6, Math.max(1, input.fasesPorSecao ?? 1));
-  const perguntasPorFase = Math.min(8, Math.max(2, input.perguntasPorFase ?? 4));
+  const perguntasPorFase = Math.min(12, Math.max(2, input.perguntasPorFase ?? 4));
   const dificuldade: DificuldadeTrilha = input.dificuldade || "Facil";
 
   const contextoRag = await buscarContextoRagTrilha(materia);
@@ -286,12 +286,11 @@ export async function gerarSugestaoTrilhaViaServicoIa(input: GerarSugestaoTrilha
   }
 
   const ai = new GoogleGenerativeAI(apiKey);
-  const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
-
-  const model = ai.getGenerativeModel({
-    model: GEMINI_MODEL,
-    generationConfig: { responseMimeType: "application/json" },
-  });
+  const modelosParaTentar = [
+    process.env.GEMINI_MODEL || "gemini-flash-latest",
+    "gemini-flash-latest",
+    "gemini-pro-latest"
+  ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 
   const prompt = `
 Voce e um designer instrucional para uma plataforma educacional.
@@ -332,32 +331,51 @@ Regras:
 `;
 
   let json: unknown;
-  try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    // Extração segura do JSON
-    const limpo = text
-      .trim()
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/```$/i, "")
-      .trim();
-      
+  let ultimoErro: any = null;
+
+  for (const nomeModelo of modelosParaTentar) {
     try {
-      json = JSON.parse(limpo);
-    } catch {
-      const inicio = limpo.indexOf("{");
-      const fim = limpo.lastIndexOf("}");
-      if (inicio >= 0 && fim > inicio) {
-        json = JSON.parse(limpo.slice(inicio, fim + 1));
-      } else {
-        throw new Error("A LLM nao retornou um JSON valido.");
+      const model = ai.getGenerativeModel({
+        model: nomeModelo,
+        generationConfig: { responseMimeType: "application/json" },
+      });
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      // Extração segura do JSON
+      const limpo = text
+        .trim()
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/```$/i, "")
+        .trim();
+        
+      try {
+        json = JSON.parse(limpo);
+      } catch {
+        const inicio = limpo.indexOf("{");
+        const fim = limpo.lastIndexOf("}");
+        if (inicio >= 0 && fim > inicio) {
+          json = JSON.parse(limpo.slice(inicio, fim + 1));
+        } else {
+          throw new Error("A LLM nao retornou um JSON valido.");
+        }
       }
+
+      if (json) {
+        ultimoErro = null;
+        break;
+      }
+    } catch (e: any) {
+      ultimoErro = e;
+      console.warn(`[geminiTrilhaSugestaoService] Modelo ${nomeModelo} falhou: ${e.message}. Tentando próximo se houver...`);
     }
-  } catch (e: any) {
-    throw new Error(`Falha ao chamar a IA: ${e.message}`);
+  }
+
+  if (!json && ultimoErro) {
+    throw new Error(`Falha ao chamar a IA: ${ultimoErro.message}`);
   }
 
   if (isIntegraTrilhaShape(json)) {

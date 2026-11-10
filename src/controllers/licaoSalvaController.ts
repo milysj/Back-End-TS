@@ -41,7 +41,7 @@ export const removerTrilhaSalva = async (req: AuthRequest, res: Response): Promi
 export const listarTrilhasSalvas = async (req: AuthRequest, res: Response): Promise<Response> => {
   try {
     const userId = req.user!._id;
-    const licoesSalvas = await LicaoSalva.find({ usuario: userId }).populate({ path: 'trilha', select: 'titulo descricao materia dificuldade imagem usuario', populate: { path: 'usuario', select: 'nome username' } }).sort({ createdAt: -1 });
+    const licoesSalvas = await LicaoSalva.find({ usuario: userId }).populate({ path: 'trilha', select: 'titulo descricao materia dificuldade imagem usuario idioma', populate: { path: 'usuario', select: 'nome username' } }).sort({ createdAt: -1 });
     const trilhas = licoesSalvas.map(ls => ls.trilha).filter(t => t !== null);
     return res.json(trilhas);
   } catch (error) {

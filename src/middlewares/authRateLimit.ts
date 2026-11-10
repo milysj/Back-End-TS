@@ -54,3 +54,15 @@ export const twoFAAuthenticatedRateLimiter = rateLimit({
   skip: skipInTests,
   message: { message: 'Muitas solicitações. Aguarde e tente novamente.' },
 });
+
+/**
+ * Limita requisições globais por IP para prevenção contra DDoS e Scrapes de API.
+ */
+export const globalRateLimiter = rateLimit({
+  windowMs: minutes(15),
+  max: numEnv('RATE_LIMIT_GLOBAL_MAX', 300),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipInTests,
+  message: { message: 'Limite de requisições excedido. Tente novamente mais tarde.' },
+});

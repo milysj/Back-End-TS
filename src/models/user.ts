@@ -21,6 +21,12 @@ export interface IUser extends Document {
   dataAceiteTermos: Date | null;
   tema: "light" | "dark";
   idioma: "pt-BR" | "en-US" | "es-ES";
+  emailNotifications: boolean;
+  courseUpdates: boolean;
+  marketingEmails: boolean;
+  publicProfile: boolean;
+  showEmail: boolean;
+  showProgress: boolean;
   isVerified: boolean;
   verificationToken?: string;
   tokenExpires?: Date;
@@ -34,6 +40,7 @@ export interface IUser extends Document {
   twoFactorLockUntil?: Date;
   status: "ATIVO" | "BLOQUEADO" | "BANIDO";
   bloqueadoAte?: Date | null;
+  tentativasLogin: number;
   canPromoteToAdmin: boolean;
 }
 
@@ -90,6 +97,12 @@ const UserSchema: Schema = new mongoose.Schema(
       enum: ["pt-BR", "en-US", "es-ES"],
       default: "pt-BR",
     },
+    emailNotifications: { type: Boolean, default: true },
+    courseUpdates: { type: Boolean, default: false },
+    marketingEmails: { type: Boolean, default: false },
+    publicProfile: { type: Boolean, default: false },
+    showEmail: { type: Boolean, default: false },
+    showProgress: { type: Boolean, default: true },
   
     isVerified: { 
       type: Boolean, default: false 
@@ -111,6 +124,7 @@ const UserSchema: Schema = new mongoose.Schema(
       default: "ATIVO",
     },
     bloqueadoAte: { type: Date, default: null },
+    tentativasLogin: { type: Number, default: 0 },
     canPromoteToAdmin: { type: Boolean, default: false },
   },
   { timestamps: true }

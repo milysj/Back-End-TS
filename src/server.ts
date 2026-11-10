@@ -12,6 +12,10 @@ import { registerUnhandledProcessHandlers } from './middlewares/unhandledProcess
 import { appLogger } from './logging/appLogger';
 import { setupSwagger } from './config/swagger';
 
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
+import { globalRateLimiter } from './middlewares/authRateLimit';
+
 // --- Importação das Rotas ---
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
@@ -27,6 +31,7 @@ import trilhaRoutes from './routes/trilhaRoutes';
 import scoreRoutes from './routes/scoreRoutes';
 import materiaRoutes from './routes/materiaRoutes';
 import adminRoutes from './routes/adminRoutes';
+import contatoRoutes from './routes/contatoRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,12 +41,59 @@ if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === '1') {
     app.set('trust proxy', 1);
 }
 
-// --- Middlewares ---
-app.use(cors());
+// --- Middlewares de Segurança ---
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "blob:", "https:"],
+            connectSrc: ["'self'", "https:"],
+        }
+    },
+    crossOriginEmbedderPolicy: false,
+}));
+
+const allowedOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map((u) => u.trim())
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || process.env.NODE_ENV !== 'production') {
+            return callback(null, true);
+        }
+        const cleanOrigin = origin.trim().replace(/\/+$/, '');
+        const hostOnly = cleanOrigin.replace(/^https?:\/\//, '');
+        const isAllowed = allowedOrigins.some((allowed) => {
+            const cleanAllowed = allowed.trim().replace(/\/+$/, '');
+            const allowedHost = cleanAllowed.replace(/^https?:\/\//, '');
+            return cleanOrigin === cleanAllowed || hostOnly === allowedHost;
+        });
+
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            callback(new Error('Origem não permitida pelo CORS'));
+        }
+    },
+    credentials: true,
+}));
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Middleware compatível com Express 5 para express-mongo-sanitize (evita erro de getter em req.query)
+app.use((req, res, next) => {
+    if (req.body) mongoSanitize.sanitize(req.body);
+    if (req.params) mongoSanitize.sanitize(req.params);
+    if (req.query) mongoSanitize.sanitize(req.query);
+    next();
+});
 app.use(httpLogMiddleware);
+app.use('/api', globalRateLimiter);
 
 // --- Registro das Rotas ---
 setupSwagger(app);
@@ -59,6 +111,7 @@ app.use('/api/trilhas', trilhaRoutes);
 app.use('/api/score', scoreRoutes);
 app.use('/api/materias', materiaRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/contato', contatoRoutes);
 
 // Rota raiz para verificar se o servidor está online
 app.get('/', (req, res) => {

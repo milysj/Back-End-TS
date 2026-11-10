@@ -11,6 +11,7 @@ import {
     atualizarTema,
     atualizarPersonagem,
     atualizarIdioma,
+    atualizarPreferencias,
     listarUsuarios
 } from "../controllers/userController";
 import {
@@ -80,5 +81,6 @@ router.get("/verificar-token/:token", verificarTokenReset);
 router.put("/tema", verificarToken, atualizarTema);
 router.put("/idioma", verificarToken, atualizarIdioma);
 router.put("/atualizar-personagem", verificarToken, atualizarPersonagem);
+router.put("/preferencias", verificarToken, atualizarPreferencias);
 
 export default router;

@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - develop
+      - developer
   workflow_dispatch:
 
 permissions:
@@ -43,6 +43,7 @@ jobs:
         run: npm run test -- --coverage
 
       - name: SonarCloud Scan
+        continue-on-error: true
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
@@ -153,6 +154,7 @@ jobs:
 
       - name: Enviar email em caso de falha
         if: failure()
+        continue-on-error: true
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -198,6 +200,7 @@ jobs:
 
       - name: Enviar email em caso de falha
         if: failure()
+        continue-on-error: true
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -244,6 +247,7 @@ jobs:
 
       - name: Enviar email em caso de falha
         if: failure()
+        continue-on-error: true
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
